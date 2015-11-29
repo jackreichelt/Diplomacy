@@ -1,0 +1,74 @@
+Adriatic Sea	Adr	sea	neutral
+Aegean Sea	Aeg	sea	neutral
+Albania	Alb	land	neutral
+Ankara	Ank	supply	turkey
+Apulia	Apu	land	neutral
+Armenia	Arm	land	neutral
+Baltic Sea	Bal	sea	neutral
+Barents Sea	Bar	sea	neutral
+Behemia	Boh	land	neutral
+Belgium	Bel	supply	neutral
+Berlin	Ber	supply	germany
+Black Sea	Bla	sea	neutral
+Brest	Bre	supply	france
+Budapest	Bud	supply	austria
+Bulgaria	Bul	supply	neutral
+Burgundy	Bur	land	neutral
+Clyde	Cly	land	neutral
+Constantinople	Con	supply	turkey
+Denmark	Den	supply	neutral
+Eastern Mediterranian	Eas	sea	neutral
+Edinburgh	Edi	supply	england
+English Channel	Eng	sea	neutral
+Finland	Fin	land	neutral
+Galacia	Gal	land	neutral
+Gascony	Gas	land	neutral
+Greece	Gre	supply	neutral
+Gulf of Bothnia	Bot	sea	neutral
+Gulf of Lyon	GoL	sea	neutral
+Helogaland Bight	Hel	sea	neutral
+Holland	Hol	supply	neutral
+Ionian Sea	Ion	sea	neutral
+Irish Sea	Iri	sea	neutral
+Kiel	Kie	supply	germany
+Liverpool	Lvp	supply	england
+Livonia	Lvn	land	neutral
+London	Lon	supply	england
+Marseilles	Mar	supply	france
+Mid-Atlantic Ocean	NAt	sea	neutral
+Moscow	Mos	supply	russia
+Munich	Mun	supply	germany
+Naples	Nap	supply	italy
+North Africa	NAf	land	neutral
+North Sea	Nth	sea	neutral
+Norway	Nwy	supply	neutral
+Norwegian Sea	Nrg	sea	neutral
+Paris	Par	supply	france
+Picardy	Pic	land	neutral
+Piedmont	Pie	land	neutral
+Portugal	Por	supply	neutral
+Prussia	Pru	land	neutral
+Rome	Rom	supply	italy
+Ruhr	Ruh	land	neutral
+Rumania	Rum	supply	neutral
+Serbia	Ser	supply	neutral
+Sevastopol	Sev	supply	russia
+Silesia	Sil	land	neutral
+Skagerrak	Ska	sea	neutral
+Smyrna	Smy	supply	turkey
+Spain	Spa	supply	neutral
+St. Petersburg	StP	supply	russia
+Sweden	Swe	supply	neutral
+Syria	Syr	land	neutral
+Trieste	Tri	supply	austria
+Tunis	Tun	supply	neutral
+Tuscany	Tus	land	neutral
+Tyrolia	Tyr	land	neutral
+Tyrrhenian Sea	Tyn	sea	neutral
+Ukraine	Ukr	land	neutral
+Venice	Ven	supply	italy
+Vienna	Vie	supply	austria
+Wales	Wal	land	neutral
+Warsaw	War	supply	russia
+Western Mediterranian	Wes	sea	neutral
+Yorkshire	Yor	land	neutral
