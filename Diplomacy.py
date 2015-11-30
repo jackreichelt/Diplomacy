@@ -341,35 +341,37 @@ class LandLockedUnopposedTests(unittest.TestCase):
 
 	def test_hold(self):
 		self.assertTrue(len(self.testGame.regions) == 4)
-		self.assertTrue(self.testLocationA.owner == 1)
-		self.assertTrue(self.testLocationB.owner == 2)
-		self.assertTrue(self.testLocationC.owner == 3)
-		self.assertTrue(self.testLocationD.owner == 7)
-		self.assertTrue(self.testUnit.location == self.testLocationA)
+
+		self.assertEqual(self.testUnit.location, self.testLocationA)
+
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 2)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 7)
 	
 	def test_move(self):
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
 
-		self.assertTrue(self.testUnit.location == self.testLocationB)
+		self.assertEqual(self.testUnit.location, self.testLocationB)
 
-		self.assertTrue(self.testLocationA.owner == 1)
-		self.assertTrue(self.testLocationB.owner == 1)
-		self.assertTrue(self.testLocationC.owner == 3)
-		self.assertTrue(self.testLocationD.owner == 7)
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 1)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 7)
 
 	def test_invalid_move(self):
 		self.testGame.addOrder('A aaa-ddd')
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
 
-		self.assertTrue(self.testUnit.location == self.testLocationA)
+		self.assertEqual(self.testUnit.location, self.testLocationA)
 
-		self.assertTrue(self.testLocationA.owner == 1)
-		self.assertTrue(self.testLocationB.owner == 2)
-		self.assertTrue(self.testLocationC.owner == 3)
-		self.assertTrue(self.testLocationD.owner == 7)
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 2)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 7)
 
 class LandLockedOpposedTests(unittest.TestCase):
 	def setUp(self):
@@ -422,12 +424,12 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
 
-		self.assertTrue(self.testUnitA.location == self.testLocationA)
+		self.assertEqual(self.testUnitA.location, self.testLocationA)
 
-		self.assertTrue(self.testLocationA.owner == 1)
-		self.assertTrue(self.testLocationB.owner == 2)
-		self.assertTrue(self.testLocationC.owner == 3)
-		self.assertTrue(self.testLocationD.owner == 7)
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 2)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 7)
 
 	def test_attackAndEvacuate(self):
 		self.testGame.addOrder('A aaa-bbb')
@@ -435,13 +437,17 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
 
-		self.assertTrue(self.testUnitA.location == self.testLocationB)
-		self.assertTrue(self.testUnitB.location == self.testLocationD)
+		self.assertEqual(self.testUnitA.location, self.testLocationB)
+		self.assertEqual(self.testUnitB.location, self.testLocationD)
 
-		self.assertTrue(self.testLocationA.owner == 1)
-		self.assertTrue(self.testLocationB.owner == 1)
-		self.assertTrue(self.testLocationC.owner == 3)
-		self.assertTrue(self.testLocationD.owner == 2)
+		self.assertEqual(self.testLocationA.unit, None)
+		self.assertEqual(self.testLocationB.unit, self.testUnitA)
+		self.assertEqual(self.testLocationD.unit, self.testUnitB)
+
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 1)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 2)
 
 		
 
