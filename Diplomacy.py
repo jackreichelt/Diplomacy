@@ -171,6 +171,7 @@ class Game(object):
 			# Set both the full name and the abbreviation to point to the new region
 			self.regionDict[parts[0].lower()] = newRegion
 			self.regionDict[parts[1].lower()] = newRegion
+		f.close()
 		print('regions read')
 
 	def readUnits(self, filename):
@@ -185,6 +186,7 @@ class Game(object):
 				self.regionDict[parts[1]].unit = newUnit
 
 				self.units.append(newUnit)
+		f.close()
 		print('units read')
 
 	def addOrder(self, order):
@@ -233,6 +235,7 @@ class Game(object):
 			if supportMatch != None:
 				moveMatch = moveOrder.match(supportMatch.group(3))
 
+
 	def connectTwoRegions(self, region1abbv, region2abbv):
 		region1 = None
 		region2 = None
@@ -258,6 +261,7 @@ class Game(object):
 			parts = line.strip().split()
 			if (self.connectTwoRegions(parts[0], parts[1]) == -1):
 				print('Error connecting', parts[0], 'and', parts[1])
+		f.close()
 		print('regions connected')
 
 	def endTurn(self):
@@ -270,26 +274,46 @@ class Game(object):
 		self.orders = []
 
 
-game = Game()
-#for region in game.regions:
-#	if region.owner != Faction.neutral:
-#		print(region.name, region.owner, Faction.intToString(region.owner))
-#for unit in sorted(game.units, key=lambda unit: unit.owner):
-#	print(Faction.intToString(unit.owner), unit.location,
-#		Type.intToString(unit.unitType))
+class LandLockedTests(unittest.TestCase):
+	def setUp(self):
+		self.testGame = Game()
+		self.testGame.regions = []
+		self.testGame.units = []
+		self.testGame.regionDict = {}
 
-#game.addOrder('A Ber-Pru')
-#game.addOrder('F Bre S A Par - Gas')
+		self.testLocationA = Region('A', 'A', 0, 1)
+		self.testLocationB = Region('B', 'B', 0, 2)
+		self.testLocationC = Region('C', 'C', 0, 3)
+		self.testLocationD = Region('D', 'D', 0, 7) # Neutral
+		"""
+		Test Region Layout
+		-----
+		|A|B|
+		-----
+		|C|D|
+		-----
+		All regions are land.
+		Diagonal regions are NOT adjacent
+		"""
 
-testLocationA = Region('A', 'A', 0, 1)
-testLocationB = Region('B', 'B', 0, 2)
-testLocationB.addNeighbour(testLocationA)
-testLocationA.addNeighbour(testLocationB)
+		self.testGame.regions.append(self.testLocationA)
+		self.testGame.regions.append(self.testLocationB)
+		self.testGame.regions.append(self.testLocationC)
+		self.testGame.regions.append(self.testLocationD)
 
-testUnit = Unit(0, testLocationA, 1)
+		self.testGame.connectTwoRegions('A', 'B')
+		self.testGame.connectTwoRegions('A', 'C')
+		self.testGame.connectTwoRegions('B', 'D')
+		self.testGame.connectTwoRegions('C', 'D')
 
-testOrder = MoveOrder(testUnit, testLocationA, testLocationB)
-testOrder.resolve()
+		self.testUnit = Unit(0, self.testLocationA, 1)
+		self.testLocationA.unit = self.testUnit
 
-print('Unit Location:', testUnit.location)
+		self.testGame.units.append(self.testUnit)
 
+	def test_hold(self):
+		self.assertTrue(len(self.testGame.regions) == 4)
+		#test.assertTrue(testLocationA.unit = )
+
+if __name__ == '__main__':
+    unittest.main()
