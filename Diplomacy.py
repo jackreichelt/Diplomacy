@@ -197,24 +197,23 @@ class Game(object):
 			elif supportMatch != None and convoyMatch == None:
 				supportQueue.append((order, supportMatch))
 
-				region = moveMatch.group(2)
+				region = supportMatch.group(2)
 					
 				if region in self.abbrevDict.keys():
 					region = self.abbrevDict[region]
 				else:
 					abbrev = False
-				print('region:', region, ', Abbrev:', abbrev)
 
 				for unit in self.units:
 					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
 							region == unit.location:
 						unit.ordered = True
 
-				print(order, 'support', supportMatch)
+				#print(order, 'support', supportMatch)
 			elif convoyMatch != None:
 				convoyQueue.append((order, convoyMatch))
 				
-				region = moveMatch.group(2)
+				region = convoyMatch.group(2)
 					
 				if region in self.abbrevDict.keys():
 					region = self.abbrevDict[region]
