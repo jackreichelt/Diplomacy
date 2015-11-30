@@ -148,10 +148,11 @@ class MoveOrder(Order):
 
 	def resolve(self):
 		if self.strength > self.target.defensiveStrength:
-			self.location.unit = None
-			self.target.unit = self.unit
-			self.unit.location = self.target
-			self.target.owner = self.location.owner
+			return(self.unit, self.location, self.target)
+			#self.location.unit = None
+			#self.target.unit = self.unit
+			#self.unit.location = self.target
+			#self.target.owner = self.location.owner
 			#TODO: Mark unit in target location for retreat.
 
 class Game(object):
@@ -279,9 +280,21 @@ class Game(object):
 
 	def resolveOrders(self):
 		#self.futureOrders()
+
+		resoloutions = []
+
 		self.holdOrders()
 		for order in self.orders:
-			order.resolve()
+			resoloutions.append(order.resolve())
+
+		for item in resoloutions:
+			unit = item[0]
+			origin = item[1]
+			target = item[2]
+			origin.unit = None
+			unit.location = target
+			target.unit = unit
+			target.owner = unit.owner
 
 	def holdOrders(self):
 		for unit in self.units:
@@ -448,9 +461,6 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.assertEqual(self.testLocationB.owner, 1)
 		self.assertEqual(self.testLocationC.owner, 3)
 		self.assertEqual(self.testLocationD.owner, 2)
-
-		
-
 
 if __name__ == '__main__':
     unittest.main()
