@@ -85,7 +85,6 @@ class Faction(Enum):
 			return 'error'
 
 class Region(object):
-	"""docstring for Region"""
 
 	def __init__(self, name, abbrev, myType,
 				owner = Faction.neutral):
@@ -94,6 +93,7 @@ class Region(object):
 		self.myType = myType
 		self.owner = owner
 		self.neighbours = []
+		self.defensiveStrength = 0
 
 	def __str__(self):
 		return self.name
@@ -109,7 +109,6 @@ class Region(object):
 
 
 class Unit(object):
-	"""docstring for Unit"""
 
 	def __init__(self, unitType, location, owner):
 		self.unitType = unitType
@@ -117,8 +116,32 @@ class Unit(object):
 		self.owner = owner
 		self.ordered = False
 
+class Order(object):
+	unit = None
+	location = None
+	strength = 0
+
+	def __init__(self, unit, location):
+		self.unit = unit
+		self.location = location
+		self.strength = 1
+
+class MoveOrder(Order):
+	target = None
+
+	def __init__(self, unit, location, target):
+		self.unit = unit
+		self.location = location
+		self.strength = 1
+		self.target = target
+
+	def resolve(self):
+		if self.strength > self.target.defensiveStrength:
+			self.unit.location = self.target
+			self.target.owner = self.location.owner
+			#TODO: Mark unit in target location for retreat.
+
 class Game(object):
-	"""docstring for Game"""
 	regions = []
 	regionSet = []
 	units = []
@@ -279,11 +302,6 @@ class Game(object):
 				print('Error connecting', parts[0], 'and', parts[1])
 		print('regions connected')
 
-
-
-
-
-
 game = Game()
 #for region in game.regions:
 #	if region.owner != Faction.neutral:
@@ -292,6 +310,19 @@ game = Game()
 #	print(Faction.intToString(unit.owner), unit.location,
 #		Type.intToString(unit.unitType))
 
-game.addOrder('A Ber-Pru')
-game.addOrder('F Bre S A Par - Gas')
+#game.addOrder('A Ber-Pru')
+#game.addOrder('F Bre S A Par - Gas')
+
+testLocationA = Region('A', 'A', 0, 1)
+testLocationB = Region('B', 'B', 0, 2)
+testLocationB.addNeighbour(testLocationA)
+testLocationA.addNeighbour(testLocationB)
+
+testUnit = Unit(0, testLocationA, 1)
+
+testOrder = MoveOrder(testUnit, testLocationA, testLocationB)
+testOrder.resolve()
+
+print('Unit Location:', testUnit.location)
+
 game.parseOrders()
