@@ -109,6 +109,11 @@ class Region(object):
 	def spawnUnit(self, unitType):
 		newUnit = Unit(unitType, self)
 
+	def isAdjacent(self, target):
+		if target in self.neighbours:
+			return True
+		return False
+
 
 class Unit(object):
 
@@ -136,7 +141,7 @@ class MoveOrder(Order):
 	def __init__(self, unit, location, target):
 		self.unit = unit
 		self.location = location
-		self.strength = 1
+		self.strength = 12
 		self.target = target
 
 		self.unit.ordered = True
@@ -161,22 +166,25 @@ class Game(object):
 
 	def readRegions(self, filename):
 		f = open(filename)
-		print('reading regions')
+		#print('reading regions')
 		for line in f:
 			parts = line.strip().split('\t')
 			newRegion = Region(parts[0], parts[1], Type.stringToInt(parts[2]),
 				Faction.stringToInt(parts[3]))
-			self.regions.append(newRegion)
+			
+			self.addRegion(newRegion)
 
-			# Set both the full name and the abbreviation to point to the new region
-			self.regionDict[parts[0].lower()] = newRegion
-			self.regionDict[parts[1].lower()] = newRegion
 		f.close()
-		print('regions read')
+		#print('regions read')
+
+	def addRegion(self, region):
+		self.regions.append(region)
+		self.regionDict[region.name.lower()] = region
+		self.regionDict[region.abbrev.lower()] = region
 
 	def readUnits(self, filename):
 		f = open(filename)
-		print('reading units')
+		#print('reading units')
 		for line in f:
 			parts = line.strip().split('\t')
 
@@ -187,7 +195,7 @@ class Game(object):
 
 				self.units.append(newUnit)
 		f.close()
-		print('units read')
+		#print('units read')
 
 	def addOrder(self, order):
 		holdOrder = re.compile('^([af]|fleet|army) (...+)[ -](holds?)')
@@ -200,22 +208,24 @@ class Game(object):
 		convoyMatch = convoyOrder.match(order.lower())
 		holdMatch = holdOrder.match(order.lower())
 
+
 		# If we have found a move order
 		if supportMatch != None or convoyMatch != None:
 			futureOrders.append(order)
-
 		elif moveMatch != None and holdMatch == None and supportMatch == None and convoyMatch == None:
-			origin = moveMatch.group(2)
-			target = moveMatch.group(3)
+			origin = self.regionDict[moveMatch.group(2)]
+			target = self.regionDict[moveMatch.group(3)]
 
-			if origin.unit == None or origin.unit.Type != Type.stringToInt(moveMatch.group(1)):
+			if not origin.isAdjacent(target):
+				return -1
+
+			if origin.unit == None or origin.unit.unitType != Type.stringToInt(moveMatch.group(1)):
 				# Invalid Order if there is no unit at the origin, or if the type doesn't match.
 				return -1
 			unit = origin.unit
 
 			newOrder = MoveOrder(unit, origin, target)
-
-			orders.append(newOrder)
+			self.orders.append(newOrder)
 
 	def findOrder(self, unit, location, target):
 		for order in orders:
@@ -256,13 +266,17 @@ class Game(object):
 
 	def connectAllRegions(self, filename):
 		f = open(filename)
-		print('connecting regions')
+		#print('connecting regions')
 		for line in f:
 			parts = line.strip().split()
 			if (self.connectTwoRegions(parts[0], parts[1]) == -1):
 				print('Error connecting', parts[0], 'and', parts[1])
 		f.close()
-		print('regions connected')
+		#print('regions connected')
+
+	def resolveOrders(self):
+		for order in self.orders:
+			order.resolve()
 
 	def endTurn(self):
 		for unit in self.units:
@@ -274,17 +288,17 @@ class Game(object):
 		self.orders = []
 
 
-class LandLockedTests(unittest.TestCase):
+class LandLockedUnopposedTests(unittest.TestCase):
 	def setUp(self):
 		self.testGame = Game()
 		self.testGame.regions = []
 		self.testGame.units = []
 		self.testGame.regionDict = {}
 
-		self.testLocationA = Region('A', 'A', 0, 1)
-		self.testLocationB = Region('B', 'B', 0, 2)
-		self.testLocationC = Region('C', 'C', 0, 3)
-		self.testLocationD = Region('D', 'D', 0, 7) # Neutral
+		self.testLocationA = Region('aaa', 'aaa', 0, 1)
+		self.testLocationB = Region('bbb', 'bbb', 0, 2)
+		self.testLocationC = Region('ccc', 'ccc', 0, 3)
+		self.testLocationD = Region('ddd', 'ddd', 0, 7) # Neutral
 		"""
 		Test Region Layout
 		-----
@@ -293,18 +307,22 @@ class LandLockedTests(unittest.TestCase):
 		|C|D|
 		-----
 		All regions are land.
-		Diagonal regions are NOT adjacent
+		Diagonal regions ARE NOT adjacent.
+		Regions A, B, and C are all owned by different people.
+		Region D is unowned.
+		Region A has a unit on it.
 		"""
+		self.testGame.addRegion(self.testLocationA)
+		self.testGame.addRegion(self.testLocationB)
+		self.testGame.addRegion(self.testLocationC)
+		self.testGame.addRegion(self.testLocationD)
 
-		self.testGame.regions.append(self.testLocationA)
-		self.testGame.regions.append(self.testLocationB)
-		self.testGame.regions.append(self.testLocationC)
-		self.testGame.regions.append(self.testLocationD)
-
-		self.testGame.connectTwoRegions('A', 'B')
-		self.testGame.connectTwoRegions('A', 'C')
-		self.testGame.connectTwoRegions('B', 'D')
-		self.testGame.connectTwoRegions('C', 'D')
+		self.testGame.connectTwoRegions('aaa', 'bbb')
+		self.testGame.connectTwoRegions('aaa', 'ccc')
+		self.testGame.connectTwoRegions('bbb', 'ddd')
+		self.testGame.connectTwoRegions('ccc', 'ddd')
+		#self.testGame.connectTwoRegions('aaa', 'ddd')
+		#self.testGame.connectTwoRegions('bbb', 'ccc')
 
 		self.testUnit = Unit(0, self.testLocationA, 1)
 		self.testLocationA.unit = self.testUnit
@@ -313,7 +331,38 @@ class LandLockedTests(unittest.TestCase):
 
 	def test_hold(self):
 		self.assertTrue(len(self.testGame.regions) == 4)
-		#test.assertTrue(testLocationA.unit = )
+		self.assertTrue(self.testLocationA.owner == 1)
+		self.assertTrue(self.testLocationB.owner == 2)
+		self.assertTrue(self.testLocationC.owner == 3)
+		self.assertTrue(self.testLocationD.owner == 7)
+		self.assertTrue(self.testUnit.location == self.testLocationA)
+	
+	def test_move(self):
+		self.testGame.addOrder('A aaa-bbb')
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+
+		self.assertTrue(self.testUnit.location == self.testLocationB)
+
+		self.assertTrue(self.testLocationA.owner == 1)
+		self.assertTrue(self.testLocationB.owner == 1)
+		self.assertTrue(self.testLocationC.owner == 3)
+		self.assertTrue(self.testLocationD.owner == 7)
+
+	def test_invalid_move(self):
+		self.testGame.addOrder('A aaa-ddd')
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+
+		self.assertTrue(self.testUnit.location == self.testLocationA)
+
+		self.assertTrue(self.testLocationA.owner == 1)
+		self.assertTrue(self.testLocationB.owner == 2)
+		self.assertTrue(self.testLocationC.owner == 3)
+		self.assertTrue(self.testLocationD.owner == 7)
+
+		
+
 
 if __name__ == '__main__':
     unittest.main()
