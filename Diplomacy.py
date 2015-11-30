@@ -148,7 +148,7 @@ class MoveOrder(Order):
 
 	def resolve(self):
 		if self.strength > self.target.defensiveStrength:
-			return(self.unit, self.location, self.target)
+			return([self.unit, self.location, self.target])
 			#self.location.unit = None
 			#self.target.unit = self.unit
 			#self.unit.location = self.target
@@ -285,13 +285,16 @@ class Game(object):
 
 		self.holdOrders()
 		for order in self.orders:
-			resoloutions.append(order.resolve())
+			result = order.resolve()
+			if not result == None:
+				resoloutions.append(result)
 
 		for item in resoloutions:
 			unit = item[0]
 			origin = item[1]
 			target = item[2]
-			origin.unit = None
+			if origin.unit == unit:
+				origin.unit = None
 			unit.location = target
 			target.unit = unit
 			target.owner = unit.owner
@@ -454,9 +457,9 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.assertEqual(self.testUnitB.location, self.testLocationD)
 
 		self.assertEqual(self.testLocationA.unit, None)
-		self.assertEqual(self.testLocationB.unit, self.testUnitA)
 		self.assertEqual(self.testLocationD.unit, self.testUnitB)
-
+		self.assertEqual(self.testLocationB.unit, self.testUnitA)
+		
 		self.assertEqual(self.testLocationA.owner, 1)
 		self.assertEqual(self.testLocationB.owner, 1)
 		self.assertEqual(self.testLocationC.owner, 3)
