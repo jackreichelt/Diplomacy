@@ -93,7 +93,7 @@ class Region(object):
 		self.abbrev = abbrev
 		self.myType = myType
 		self.owner = owner
-		self.neighbour = ()
+		self.neighbours = []
 
 	def __str__(self):
 		return self.name
@@ -140,6 +140,7 @@ class Game(object):
 			self.regions.append(newRegion)
 			self.regionSet.append(parts[0])
 			self.abbrevDict[parts[1].lower()] = parts[0]
+		print('regions read')
 
 	def readUnits(self, filename):
 		f = open(filename)
@@ -149,6 +150,7 @@ class Game(object):
 			newUnit = Unit(Type.stringToInt(parts[0]), parts[1],
 				Faction.stringToInt(parts[2]))
 			self.units.append(newUnit)
+		print('units read')
 
 	def newTurn(self):
 		self.orders = []
@@ -159,8 +161,8 @@ class Game(object):
 	def parseOrders(self):
 		holdOrder = re.compile('^([af]|fleet|army) (...+)[ -](holds?)')
 		moveOrder = re.compile('^([af]|fleet|army) (...+)[ -](...+)$')
-		supportOrder = re.compile('^([af]|fleet|army) (...+) s (.*)$')
-		convoyOrder = re.compile('^([af]|fleet|army) (...+) c (.*)$')
+		supportOrder = re.compile('^([af]|fleet|army) (...) s (...*)$')
+		convoyOrder = re.compile('^([af]|fleet|army) (...+) c (...*)$')
 
 		defensiveStrength = {}
 		actionStrength = {}
@@ -179,15 +181,51 @@ class Game(object):
 			if moveMatch != None and holdMatch == None and supportMatch == None\
 					and convoyMatch == None:
 				moveQueue.append((order, moveMatch))
-				unit.ordered = True
+
+				region = moveMatch.group(2)
+					
+				if region in self.abbrevDict.keys():
+					region = self.abbrevDict[region]
+				else:
+					abbrev = False
+
+				for unit in self.units:
+					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
+							region == unit.location:
+						unit.ordered = True
 				#print(order, 'move', moveMatch)
 			elif supportMatch != None and convoyMatch == None:
 				supportQueue.append((order, supportMatch))
-				unit.ordered = True
-				#print(order, 'support', supportMatch)
+
+				region = moveMatch.group(2)
+					
+				if region in self.abbrevDict.keys():
+					region = self.abbrevDict[region]
+				else:
+					abbrev = False
+				print('region:', region, ', Abbrev:', abbrev)
+
+				for unit in self.units:
+					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
+							region == unit.location:
+						unit.ordered = True
+
+				print(order, 'support', supportMatch)
 			elif convoyMatch != None:
 				convoyQueue.append((order, convoyMatch))
-				unit.ordered = True
+				
+				region = moveMatch.group(2)
+					
+				if region in self.abbrevDict.keys():
+					region = self.abbrevDict[region]
+				else:
+					abbrev = False
+
+				for unit in self.units:
+					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
+							region == unit.location:
+						unit.ordered = True
+
 				#print(order, 'convoy', convoyMatch)
 			else:
 				holdMatch = holdOrder.match(order.lower())
@@ -205,12 +243,11 @@ class Game(object):
 						if Type.stringToInt(holdMatch.group(1)) == unit.unitType and\
 								region == unit.location:
 							defensiveStrength[region.lower()] = 1
-							print('here')
 							unit.ordered = True
 
 
 		for unit in self.units:
-			print(unit.owner, unit.unitType, unit.location, unit.ordered)
+			#print(unit.owner, unit.unitType, unit.location, unit.ordered)
 			if unit.ordered == False:
 				defensiveStrength[unit.location.lower()] = 1
 			unit.ordered = False
@@ -221,10 +258,10 @@ class Game(object):
 	def connectTwoRegions(self, region1abbv, region2abbv):
 		region1 = None
 		region2 = None
-		for region in regions:
-			if region.abbrev == region1abbv:
+		for region in self.regions:
+			if region.abbrev.lower() == region1abbv.lower():
 				region1 = region
-			elif region.abbrev == region2abbv:
+			elif region.abbrev.lower() == region2abbv.lower():
 				region2 = region
 
 		if region1 == None or region2 == None:
@@ -239,8 +276,11 @@ class Game(object):
 		print('connecting regions')
 		for line in f:
 			parts = line.strip().split()
-			if (connectTwoRegions(parts[0], parts[1]) == -1):
+			if (self.connectTwoRegions(parts[0], parts[1]) == -1):
 				print('Error connecting', parts[0], 'and', parts[1])
+		print('regions connected')
+
+
 
 
 
@@ -253,6 +293,6 @@ game = Game()
 #	print(Faction.intToString(unit.owner), unit.location,
 #		Type.intToString(unit.unitType))
 
-game.addOrder('F Lon Hold')
-game.addOrder('a par-bre')
+game.addOrder('A Ber-Pru')
+game.addOrder('F Bre S A Par - Gas')
 game.parseOrders()
