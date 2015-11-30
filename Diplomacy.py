@@ -141,13 +141,15 @@ class MoveOrder(Order):
 	def __init__(self, unit, location, target):
 		self.unit = unit
 		self.location = location
-		self.strength = 12
+		self.strength = 1
 		self.target = target
 
 		self.unit.ordered = True
 
 	def resolve(self):
 		if self.strength > self.target.defensiveStrength:
+			self.location.unit = None
+			self.target.unit = self.unit
 			self.unit.location = self.target
 			self.target.owner = self.location.owner
 			#TODO: Mark unit in target location for retreat.
@@ -159,10 +161,11 @@ class Game(object):
 	futureOrders = []
 	regionDict = {}
 
-	def __init__(self):
-		self.readRegions('regions.dat')
-		self.connectAllRegions('neighbours.dat')
-		self.readUnits('units.dat')
+	def __init__(self, test=False):
+		if not test:
+			self.readRegions('regions.dat')
+			self.connectAllRegions('neighbours.dat')
+			self.readUnits('units.dat')
 
 	def readRegions(self, filename):
 		f = open(filename)
@@ -238,7 +241,7 @@ class Game(object):
 		supportOrder = re.compile('^([af]|fleet|army) (...) s (...*)$')
 		convoyOrder = re.compile('^([af]|fleet|army) (...+) c (...*)$')
 
-		for order in futureOrders:
+		for order in self.futureOrders:
 			supportMatch = supportOrder.match(order.lower())
 			convoyMatch = convoyOrder.match(order.lower())
 
@@ -275,8 +278,15 @@ class Game(object):
 		#print('regions connected')
 
 	def resolveOrders(self):
+		#self.futureOrders()
+		self.holdOrders()
 		for order in self.orders:
 			order.resolve()
+
+	def holdOrders(self):
+		for unit in self.units:
+			if not unit.ordered:
+				unit.location.defensiveStrength += 1
 
 	def endTurn(self):
 		for unit in self.units:
@@ -290,7 +300,7 @@ class Game(object):
 
 class LandLockedUnopposedTests(unittest.TestCase):
 	def setUp(self):
-		self.testGame = Game()
+		self.testGame = Game(True)
 		self.testGame.regions = []
 		self.testGame.units = []
 		self.testGame.regionDict = {}
@@ -310,7 +320,7 @@ class LandLockedUnopposedTests(unittest.TestCase):
 		Diagonal regions ARE NOT adjacent.
 		Regions A, B, and C are all owned by different people.
 		Region D is unowned.
-		Region A has a unit on it.
+		Region A has a unit in it.
 		"""
 		self.testGame.addRegion(self.testLocationA)
 		self.testGame.addRegion(self.testLocationB)
@@ -360,6 +370,78 @@ class LandLockedUnopposedTests(unittest.TestCase):
 		self.assertTrue(self.testLocationB.owner == 2)
 		self.assertTrue(self.testLocationC.owner == 3)
 		self.assertTrue(self.testLocationD.owner == 7)
+
+class LandLockedOpposedTests(unittest.TestCase):
+	def setUp(self):
+		self.testGame = Game(True)
+		self.testGame.regions = []
+		self.testGame.units = []
+		self.testGame.regionDict = {}
+
+		self.testLocationA = Region('aaa', 'aaa', 0, 1)
+		self.testLocationB = Region('bbb', 'bbb', 0, 2)
+		self.testLocationC = Region('ccc', 'ccc', 0, 3)
+		self.testLocationD = Region('ddd', 'ddd', 0, 7) # Neutral
+		"""
+		Test Region Layout
+		-----
+		|A|B|
+		-----
+		|C|D|
+		-----
+		All regions are land.
+		Diagonal regions ARE NOT adjacent.
+		Regions A, B, and C are all owned by different people.
+		Region D is unowned.
+		Region A has a unit in it.
+		Region B has a unit in it.
+		"""
+		self.testGame.addRegion(self.testLocationA)
+		self.testGame.addRegion(self.testLocationB)
+		self.testGame.addRegion(self.testLocationC)
+		self.testGame.addRegion(self.testLocationD)
+
+		self.testGame.connectTwoRegions('aaa', 'bbb')
+		self.testGame.connectTwoRegions('aaa', 'ccc')
+		self.testGame.connectTwoRegions('bbb', 'ddd')
+		self.testGame.connectTwoRegions('ccc', 'ddd')
+		#self.testGame.connectTwoRegions('aaa', 'ddd')
+		#self.testGame.connectTwoRegions('bbb', 'ccc')
+
+		self.testUnitA = Unit(0, self.testLocationA, 1)
+		self.testLocationA.unit = self.testUnitA
+
+		self.testUnitB = Unit(0, self.testLocationB, 2)
+		self.testLocationB.unit = self.testUnitB
+
+		self.testGame.units.append(self.testUnitA)
+		self.testGame.units.append(self.testUnitB)
+	
+	def test_attack(self):
+		self.testGame.addOrder('A aaa-bbb')
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+
+		self.assertTrue(self.testUnitA.location == self.testLocationA)
+
+		self.assertTrue(self.testLocationA.owner == 1)
+		self.assertTrue(self.testLocationB.owner == 2)
+		self.assertTrue(self.testLocationC.owner == 3)
+		self.assertTrue(self.testLocationD.owner == 7)
+
+	def test_attackAndEvacuate(self):
+		self.testGame.addOrder('A aaa-bbb')
+		self.testGame.addOrder('A bbb-ddd')
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+
+		self.assertTrue(self.testUnitA.location == self.testLocationB)
+		self.assertTrue(self.testUnitB.location == self.testLocationD)
+
+		self.assertTrue(self.testLocationA.owner == 1)
+		self.assertTrue(self.testLocationB.owner == 1)
+		self.assertTrue(self.testLocationC.owner == 3)
+		self.assertTrue(self.testLocationD.owner == 2)
 
 		
 
