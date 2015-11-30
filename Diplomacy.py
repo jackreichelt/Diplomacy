@@ -1,5 +1,6 @@
 from enum import Enum
 import re
+import unittest
 
 class Type(Enum):
 	land = 0
@@ -93,6 +94,7 @@ class Region(object):
 		self.myType = myType
 		self.owner = owner
 		self.neighbours = []
+		self.unit = None
 		self.defensiveStrength = 0
 
 	def __str__(self):
@@ -126,6 +128,8 @@ class Order(object):
 		self.location = location
 		self.strength = 1
 
+		self.unit.ordered = True
+
 class MoveOrder(Order):
 	target = None
 
@@ -135,6 +139,8 @@ class MoveOrder(Order):
 		self.strength = 1
 		self.target = target
 
+		self.unit.ordered = True
+
 	def resolve(self):
 		if self.strength > self.target.defensiveStrength:
 			self.unit.location = self.target
@@ -143,10 +149,10 @@ class MoveOrder(Order):
 
 class Game(object):
 	regions = []
-	regionSet = []
 	units = []
 	orders = []
-	abbrevDict = {}
+	futureOrders = []
+	regionDict = {}
 
 	def __init__(self):
 		self.readRegions('regions.dat')
@@ -161,8 +167,10 @@ class Game(object):
 			newRegion = Region(parts[0], parts[1], Type.stringToInt(parts[2]),
 				Faction.stringToInt(parts[3]))
 			self.regions.append(newRegion)
-			self.regionSet.append(parts[0])
-			self.abbrevDict[parts[1].lower()] = parts[0]
+
+			# Set both the full name and the abbreviation to point to the new region
+			self.regionDict[parts[0].lower()] = newRegion
+			self.regionDict[parts[1].lower()] = newRegion
 		print('regions read')
 
 	def readUnits(self, filename):
@@ -170,123 +178,73 @@ class Game(object):
 		print('reading units')
 		for line in f:
 			parts = line.strip().split('\t')
-			newUnit = Unit(Type.stringToInt(parts[0]), parts[1],
-				Faction.stringToInt(parts[2]))
-			self.units.append(newUnit)
+
+			if parts[1] in self.regionDict.keys():
+				newUnit = Unit(Type.stringToInt(parts[0]), parts[1], Faction.stringToInt(parts[2]))
+
+				self.regionDict[parts[1]].unit = newUnit
+
+				self.units.append(newUnit)
 		print('units read')
 
-	def newTurn(self):
-		self.orders = []
-
-	def addOrder(self, newOrder):
-		self.orders.append(newOrder)
-
-	def parseOrders(self):
+	def addOrder(self, order):
 		holdOrder = re.compile('^([af]|fleet|army) (...+)[ -](holds?)')
 		moveOrder = re.compile('^([af]|fleet|army) (...+)[ -](...+)$')
 		supportOrder = re.compile('^([af]|fleet|army) (...) s (...*)$')
 		convoyOrder = re.compile('^([af]|fleet|army) (...+) c (...*)$')
 
-		defensiveStrength = {}
-		actionStrength = {}
+		moveMatch = moveOrder.match(order.lower())
+		supportMatch = supportOrder.match(order.lower())
+		convoyMatch = convoyOrder.match(order.lower())
+		holdMatch = holdOrder.match(order.lower())
 
-		holdQueue = []
-		moveQueue = []
-		supportQueue = []
-		convoyQueue = []
+		# If we have found a move order
+		if supportMatch != None or convoyMatch != None:
+			futureOrders.append(order)
 
-		#split the orders into four categories
-		for order in self.orders:
-			moveMatch = moveOrder.match(order.lower())
+		elif moveMatch != None and holdMatch == None and supportMatch == None and convoyMatch == None:
+			origin = moveMatch.group(2)
+			target = moveMatch.group(3)
+
+			if origin.unit == None or origin.unit.Type != Type.stringToInt(moveMatch.group(1)):
+				# Invalid Order if there is no unit at the origin, or if the type doesn't match.
+				return -1
+			unit = origin.unit
+
+			newOrder = MoveOrder(unit, origin, target)
+
+			orders.append(newOrder)
+
+	def findOrder(self, unit, location, target):
+		for order in orders:
+			if order.unit == unit and order.location == location and order.target == target:
+				return order 
+
+	def futureOrders(self):
+		holdOrder = re.compile('^([af]|fleet|army) (...+)[ -](holds?)')
+		moveOrder = re.compile('^([af]|fleet|army) (...+)[ -](...+)$')
+		supportOrder = re.compile('^([af]|fleet|army) (...) s (...*)$')
+		convoyOrder = re.compile('^([af]|fleet|army) (...+) c (...*)$')
+
+		for order in futureOrders:
 			supportMatch = supportOrder.match(order.lower())
 			convoyMatch = convoyOrder.match(order.lower())
-			holdMatch = holdOrder.match(order.lower())
-			if moveMatch != None and holdMatch == None and supportMatch == None\
-					and convoyMatch == None:
-				moveQueue.append((order, moveMatch))
 
-				region = moveMatch.group(2)
-					
-				if region in self.abbrevDict.keys():
-					region = self.abbrevDict[region]
-				else:
-					abbrev = False
-
-				for unit in self.units:
-					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
-							region == unit.location:
-						unit.ordered = True
-				#print(order, 'move', moveMatch)
-			elif supportMatch != None and convoyMatch == None:
-				supportQueue.append((order, supportMatch))
-
-				region = supportMatch.group(2)
-					
-				if region in self.abbrevDict.keys():
-					region = self.abbrevDict[region]
-				else:
-					abbrev = False
-
-				for unit in self.units:
-					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
-							region == unit.location:
-						unit.ordered = True
-
-				#print(order, 'support', supportMatch)
-			elif convoyMatch != None:
-				convoyQueue.append((order, convoyMatch))
-				
-				region = convoyMatch.group(2)
-					
-				if region in self.abbrevDict.keys():
-					region = self.abbrevDict[region]
-				else:
-					abbrev = False
-
-				for unit in self.units:
-					if Type.stringToInt(moveMatch.group(1)) == unit.unitType and\
-							region == unit.location:
-						unit.ordered = True
-
-				#print(order, 'convoy', convoyMatch)
-			else:
-				holdMatch = holdOrder.match(order.lower())
-				#print(order, 'hold', holdMatch)
-				if holdMatch != None:
-
-					region = holdMatch.group(2)
-					
-					if region in self.abbrevDict.keys():
-						region = self.abbrevDict[region]
-					else:
-						abbrev = False
-
-					for unit in self.units:
-						if Type.stringToInt(holdMatch.group(1)) == unit.unitType and\
-								region == unit.location:
-							defensiveStrength[region.lower()] = 1
-							unit.ordered = True
-
-
-		for unit in self.units:
-			#print(unit.owner, unit.unitType, unit.location, unit.ordered)
-			if unit.ordered == False:
-				defensiveStrength[unit.location.lower()] = 1
-			unit.ordered = False
-
-		for region in defensiveStrength.keys():
-			print(region, defensiveStrength[region])
+			if supportMatch != None:
+				moveMatch = moveOrder.match(supportMatch.group(3))
 
 	def connectTwoRegions(self, region1abbv, region2abbv):
 		region1 = None
 		region2 = None
-		for region in self.regions:
-			if region.abbrev.lower() == region1abbv.lower():
-				region1 = region
-			elif region.abbrev.lower() == region2abbv.lower():
-				region2 = region
+		
+		if region1abbv.lower() in self.regionDict.keys():
+			region1 = self.regionDict[region1abbv.lower()]
+		else:
+			return -1
 
-		if region1 == None or region2 == None:
+		if region2abbv.lower() in self.regionDict.keys():
+			region2 = self.regionDict[region2abbv.lower()]
+		else:
 			return -1
 
 		region1.addNeighbour(region2)
@@ -301,6 +259,16 @@ class Game(object):
 			if (self.connectTwoRegions(parts[0], parts[1]) == -1):
 				print('Error connecting', parts[0], 'and', parts[1])
 		print('regions connected')
+
+	def endTurn(self):
+		for unit in self.units:
+			unit.ordered = False
+
+		for region in self.regions:
+			region.defensiveStrength = 0
+
+		self.orders = []
+
 
 game = Game()
 #for region in game.regions:
@@ -325,4 +293,3 @@ testOrder.resolve()
 
 print('Unit Location:', testUnit.location)
 
-game.parseOrders()
