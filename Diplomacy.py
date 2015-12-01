@@ -144,11 +144,16 @@ class MoveOrder(Order):
 		self.strength = 1
 		self.target = target
 
+		self.success = False
+
 		self.unit.ordered = True
 
 	def resolve(self):
 		if self.strength > self.target.defensiveStrength:
+			self.success = True
 			return([self.unit, self.location, self.target])
+		else:
+			self.location.defensiveStrength += 1
 			#self.location.unit = None
 			#self.target.unit = self.unit
 			#self.unit.location = self.target
@@ -464,6 +469,74 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.assertEqual(self.testLocationB.owner, 1)
 		self.assertEqual(self.testLocationC.owner, 3)
 		self.assertEqual(self.testLocationD.owner, 2)
+
+	def setUp(self):
+		self.testGame = Game(True)
+		self.testGame.regions = []
+		self.testGame.units = []
+		self.testGame.regionDict = {}
+
+		self.testLocationA = Region('aaa', 'aaa', 0, 1)
+		self.testLocationB = Region('bbb', 'bbb', 0, 2)
+		self.testLocationC = Region('ccc', 'ccc', 0, 3)
+		self.testLocationD = Region('ddd', 'ddd', 0, 7) # Neutral
+		"""
+		Test Region Layout
+		-----
+		|A|B|
+		-----
+		|C|D|
+		-----
+		All regions are land.
+		Diagonal regions ARE NOT adjacent.
+		Regions A, B, and C are all owned by different people.
+		Region D is unowned.
+		Region A has a unit in it.
+		Region B has a unit in it.
+		"""
+		self.testGame.addRegion(self.testLocationA)
+		self.testGame.addRegion(self.testLocationB)
+		self.testGame.addRegion(self.testLocationC)
+		self.testGame.addRegion(self.testLocationD)
+
+		self.testGame.connectTwoRegions('aaa', 'bbb')
+		self.testGame.connectTwoRegions('aaa', 'ccc')
+		self.testGame.connectTwoRegions('bbb', 'ddd')
+		self.testGame.connectTwoRegions('ccc', 'ddd')
+		#self.testGame.connectTwoRegions('aaa', 'ddd')
+		#self.testGame.connectTwoRegions('bbb', 'ccc')
+
+		self.testUnitA = Unit(0, self.testLocationA, 1)
+		self.testLocationA.unit = self.testUnitA
+
+		self.testUnitB = Unit(0, self.testLocationB, 2)
+		self.testLocationB.unit = self.testUnitB
+
+		self.testUnitC = Unit(0, self.testLocationD, 3)
+		self.testLocationD.unit = self.testUnitC
+
+		self.testGame.units.append(self.testUnitA)
+		self.testGame.units.append(self.testUnitB)
+		self.testGame.units.append(self.testUnitC)
+
+	def test_stalledAttack(self):
+		self.testGame.addOrder('A aaa-bbb')
+		self.testGame.addOrder('A bbb-ddd')
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+
+		self.assertEqual(self.testUnitA.location, self.testLocationA)
+		self.assertEqual(self.testUnitB.location, self.testLocationB)
+		self.assertEqual(self.testUnitC.location, self.testLocationD)
+
+		self.assertEqual(self.testLocationA.unit, self.testUnitA)
+		self.assertEqual(self.testLocationD.unit, self.testUnitC)
+		self.assertEqual(self.testLocationB.unit, self.testUnitB)
+		
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 2)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 7)
 
 if __name__ == '__main__':
     unittest.main()
