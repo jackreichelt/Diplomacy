@@ -122,6 +122,7 @@ class Unit(object):
 		self.location = location
 		self.owner = owner
 		self.ordered = False
+		self.order = None
 
 class Order(object):
 	target = None
@@ -138,15 +139,17 @@ class Order(object):
 
 	def resolve(self):
 		if self.strength > self.target.defensiveStrength:
-			self.success = True
-			return([self.unit, self.location, self.target])
+		# 	self.success = True
+		# 	return([self.unit, self.location, self.target])
+		# else:
+		# 	self.location.defensiveStrength += 1
+			self.location.unit = None
+			self.target.unit = self.unit
+			self.unit.location = self.target
+			self.target.owner = self.location.owner
 		else:
 			self.location.defensiveStrength += 1
-			#self.location.unit = None
-			#self.target.unit = self.unit
-			#self.unit.location = self.target
-			#self.target.owner = self.location.owner
-			#TODO: Mark unit in target location for retreat.
+		#TODO: Mark unit in target location for retreat.
 
 class OrderChain(object):
 	orders = []
@@ -160,6 +163,28 @@ class OrderChain(object):
 			return -1
 		self.orders.append(newOrder)
 		return 0
+
+	def buildChain(self):
+		for order in orders:
+			if order.target.unit != None:
+				if order.target.unit.ordered:
+					if addOrder(order.target.unit.order) == -1:
+						# Chain has looped around.
+						# Will have to find some method of working out what to do here.
+						break
+					# Else
+						# The order is added to the chain.
+				else:
+					# The chain has ended and the final node has a defender
+					order.target.defensiveStrength += 1
+			# Else
+				# The order is unopposed, marking the end of the chain.
+
+	def resolveOrders(self):
+		for order in orders[::-1]:
+
+
+
 
 class Game(object):
 	regions = []
@@ -289,7 +314,7 @@ class Game(object):
 
 		resoloutions = []
 
-		self.holdOrders()
+		#self.holdOrders()
 		for order in self.orders:
 			result = order.resolve()
 			if not result == None:
