@@ -124,18 +124,6 @@ class Unit(object):
 		self.ordered = False
 
 class Order(object):
-	unit = None
-	location = None
-	strength = 0
-
-	def __init__(self, unit, location):
-		self.unit = unit
-		self.location = location
-		self.strength = 1
-
-		self.unit.ordered = True
-
-class MoveOrder(Order):
 	target = None
 
 	def __init__(self, unit, location, target):
@@ -159,6 +147,19 @@ class MoveOrder(Order):
 			#self.unit.location = self.target
 			#self.target.owner = self.location.owner
 			#TODO: Mark unit in target location for retreat.
+
+class OrderChain(object):
+	orders = []
+
+	def __init__(self, head):
+		self.orders.append(head)
+
+	def addOrder(self, newOrder):
+		# check if OrderChain is a loop
+		if newOrder in orders:
+			return -1
+		self.orders.append(newOrder)
+		return 0
 
 class Game(object):
 	regions = []
@@ -233,7 +234,7 @@ class Game(object):
 				return -1
 			unit = origin.unit
 
-			newOrder = MoveOrder(unit, origin, target)
+			newOrder = Order(unit, origin, target)
 			self.orders.append(newOrder)
 
 	def findOrder(self, unit, location, target):
@@ -317,7 +318,6 @@ class Game(object):
 			region.defensiveStrength = 0
 
 		self.orders = []
-
 
 class LandLockedUnopposedTests(unittest.TestCase):
 	def setUp(self):
@@ -470,6 +470,7 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.assertEqual(self.testLocationC.owner, 3)
 		self.assertEqual(self.testLocationD.owner, 2)
 
+class LandLockedThreeFactionTests(unittest.TestCase):
 	def setUp(self):
 		self.testGame = Game(True)
 		self.testGame.regions = []
