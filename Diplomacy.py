@@ -151,11 +151,13 @@ class Order(object):
 			self.location.defensiveStrength += 1
 		#TODO: Mark unit in target location for retreat.
 
-class OrderChain(object):
-	orders = []
+class OrderChainLink(object):
+	order = None
+	higherOrderChains = []
+	lowerOrderChains = []
 
 	def __init__(self, head):
-		self.orders.append(head)
+		self.order = head
 
 	def addOrder(self, newOrder):
 		# check if OrderChain is a loop
@@ -163,6 +165,12 @@ class OrderChain(object):
 			return -1
 		self.orders.append(newOrder)
 		return 0
+
+	def connectHigherChain(self, chain):
+		self.higherOrderChains.append(chain)
+
+	def connectLowerChain(self, chain):
+		self.lowerOrderChains.append(chain)
 
 	def buildChain(self):
 		for order in orders:
@@ -181,10 +189,11 @@ class OrderChain(object):
 				# The order is unopposed, marking the end of the chain.
 
 	def resolveOrders(self):
-		for order in orders[::-1]:
+		for chain in lowerOrderChains:
+			chain.resolveOrders()
 
-
-
+		for chain in higherOrderChains:
+			chain.resolveOrders()
 
 class Game(object):
 	regions = []
@@ -310,25 +319,27 @@ class Game(object):
 		#print('regions connected')
 
 	def resolveOrders(self):
-		#self.futureOrders()
 
-		resoloutions = []
 
-		#self.holdOrders()
-		for order in self.orders:
-			result = order.resolve()
-			if not result == None:
-				resoloutions.append(result)
+		# #self.futureOrders()
 
-		for item in resoloutions:
-			unit = item[0]
-			origin = item[1]
-			target = item[2]
-			if origin.unit == unit:
-				origin.unit = None
-			unit.location = target
-			target.unit = unit
-			target.owner = unit.owner
+		# resoloutions = []
+
+		# #self.holdOrders()
+		# for order in self.orders:
+		# 	result = order.resolve()
+		# 	if not result == None:
+		# 		resoloutions.append(result)
+
+		# for item in resoloutions:
+		# 	unit = item[0]
+		# 	origin = item[1]
+		# 	target = item[2]
+		# 	if origin.unit == unit:
+		# 		origin.unit = None
+		# 	unit.location = target
+		# 	target.unit = unit
+		# 	target.owner = unit.owner
 
 	def holdOrders(self):
 		for unit in self.units:
