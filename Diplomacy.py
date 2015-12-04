@@ -3,6 +3,11 @@ import re
 import unittest
 
 class Type(Enum):
+	"""
+	Simply an enum for the army and region types.
+	Contains two auxilliary functions to convert between a string and the enum,
+		and the enumerated int and the string.
+	"""
 	land = 0
 	sea = 1
 	supply = 2
@@ -36,6 +41,11 @@ class Type(Enum):
 				return 'fleet'
 
 class Faction(Enum):
+	"""
+	Simply an enum for the different factions.
+	Contains two auxilliary functions to convert between a string and the enum,
+		and the enumerated int and the string.
+	"""
 	england = 0
 	france = 1
 	germany = 2
@@ -86,6 +96,14 @@ class Faction(Enum):
 			return 'error'
 
 class Region(object):
+	"""
+	The Region class represents a region on the game map.
+	It has a name, abbrev, type and owner that are self explanatory.
+	It has a list of neighbours, which are also regions. This
+		constructs the graph of the board.
+	It stores the unit that is in position on it, as well as having a
+		variable for the defensive strength, used during order resolutions.
+	"""
 
 	def __init__(self, name, abbrev, myType,
 				owner = Faction.neutral):
@@ -116,7 +134,14 @@ class Region(object):
 
 
 class Unit(object):
-
+	"""
+	The unit class represents a unit on the field.
+	The unitType and owner variables are self explanatory.
+	The location variable stores the Region that the unit is in.
+	The order variable stores the Order that the unit has been given.
+	The ordered variable marks if the unit has received an order.
+		(Redundant. Should remove)
+	"""
 	def __init__(self, unitType, location, owner):
 		self.unitType = unitType
 		self.location = location
@@ -125,6 +150,18 @@ class Unit(object):
 		self.order = None
 
 class Order(object):
+	"""
+	The Order class represents a move order that a unit has been given.
+	The unit shows which unit is being given the order.
+	The location variable shows the location of that unit. (Redundant?)
+	The strength is the effective strength of the action.
+		1 base, plus 1 per support.
+	The orderChain variable acts as the node for adjacent orders
+		(Redundant? This should be folded in, I expect.)
+
+	Possibly also need to make different Order classes, on the same template.
+	This would allow a different resolution command, and such.
+	"""
 	target = None
 
 	def __init__(self, unit, location, target):
@@ -153,6 +190,9 @@ class Order(object):
 		#TODO: Mark unit in target location for retreat.
 
 class OrderChainLink(object):
+	"""
+	Possibly redundant. See Order class.
+	"""
 	order = None
 	higherOrderChains = []
 	lowerOrderChains = []
@@ -190,6 +230,20 @@ class OrderChainLink(object):
 			chain.resolveOrders()
 
 class Game(object):
+	"""
+	The main game class.
+	Contains the game state:
+		regions is a list of all regions
+		units is a list of all units
+		orders is a list of all orders
+		futureOrders is a list of orders to be processed in the second pass
+			(Redundant? I expect that will get removed with the work on the
+			order dependency chain.)
+		regionDict is a dictionary where both the name and abbreviation of
+			a region map to that Region object. This allows the removal of
+			checks if a name or abbreviation is used. Simply get the item
+			for whatever is provided. If it's a key, it will work.
+	"""
 	regions = []
 	units = []
 	orders = []
