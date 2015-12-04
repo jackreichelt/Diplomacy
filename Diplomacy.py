@@ -132,6 +132,7 @@ class Order(object):
 		self.location = location
 		self.strength = 1
 		self.target = target
+		self.orderChain = None
 
 		self.success = False
 
@@ -159,34 +160,27 @@ class OrderChainLink(object):
 	def __init__(self, head):
 		self.order = head
 
-	def addOrder(self, newOrder):
-		# check if OrderChain is a loop
-		if newOrder in orders:
-			return -1
-		self.orders.append(newOrder)
-		return 0
-
-	def connectHigherChain(self, chain):
+	def connectHigherLink(self, chain):
 		self.higherOrderChains.append(chain)
 
-	def connectLowerChain(self, chain):
+	def connectLowerLink(self, chain):
 		self.lowerOrderChains.append(chain)
 
-	def buildChain(self):
-		for order in orders:
-			if order.target.unit != None:
-				if order.target.unit.ordered:
-					if addOrder(order.target.unit.order) == -1:
-						# Chain has looped around.
-						# Will have to find some method of working out what to do here.
-						break
-					# Else
-						# The order is added to the chain.
-				else:
-					# The chain has ended and the final node has a defender
-					order.target.defensiveStrength += 1
-			# Else
-				# The order is unopposed, marking the end of the chain.
+	# def buildChain(self):
+	# 	for order in orders:
+	# 		if order.target.unit != None:
+	# 			if order.target.unit.ordered:
+	# 				if addOrder(order.target.unit.order) == -1:
+	# 					# Chain has looped around.
+	# 					# Will have to find some method of working out what to do here.
+	# 					break
+	# 				# Else
+	# 					# The order is added to the chain.
+	# 			else:
+	# 				# The chain has ended and the final node has a defender
+	# 				order.target.defensiveStrength += 1
+	# 		# Else
+	# 			# The order is unopposed, marking the end of the chain.
 
 	def resolveOrders(self):
 		for chain in lowerOrderChains:
@@ -319,6 +313,9 @@ class Game(object):
 		#print('regions connected')
 
 	def resolveOrders(self):
+		for order in self.orders:
+			if order.orderChain == None:
+
 
 
 		# #self.futureOrders()
