@@ -1,4 +1,5 @@
 from enum import Enum
+from Orders import *
 import re
 import unittest
 
@@ -139,95 +140,12 @@ class Unit(object):
 	The unitType and owner variables are self explanatory.
 	The location variable stores the Region that the unit is in.
 	The order variable stores the Order that the unit has been given.
-	The ordered variable marks if the unit has received an order.
-		(Redundant. Should remove)
 	"""
 	def __init__(self, unitType, location, owner):
 		self.unitType = unitType
 		self.location = location
 		self.owner = owner
-		self.ordered = False
 		self.order = None
-
-class Order(object):
-	"""
-	The Order class represents a move order that a unit has been given.
-	The unit shows which unit is being given the order.
-	The location variable shows the location of that unit. (Redundant?)
-	The strength is the effective strength of the action.
-		1 base, plus 1 per support.
-	The orderChain variable acts as the node for adjacent orders
-		(Redundant? This should be folded in, I expect.)
-
-	Possibly also need to make different Order classes, on the same template.
-	This would allow a different resolution command, and such.
-	"""
-	target = None
-
-	def __init__(self, unit, location, target):
-		self.unit = unit
-		self.location = location
-		self.strength = 1
-		self.target = target
-		self.orderChain = None
-
-		self.success = False
-
-		self.unit.ordered = True
-
-	def resolve(self):
-		if self.strength > self.target.defensiveStrength:
-		# 	self.success = True
-		# 	return([self.unit, self.location, self.target])
-		# else:
-		# 	self.location.defensiveStrength += 1
-			self.location.unit = None
-			self.target.unit = self.unit
-			self.unit.location = self.target
-			self.target.owner = self.location.owner
-		else:
-			self.location.defensiveStrength += 1
-		#TODO: Mark unit in target location for retreat.
-
-class OrderChainLink(object):
-	"""
-	Possibly redundant. See Order class.
-	"""
-	order = None
-	higherOrderChains = []
-	lowerOrderChains = []
-
-	def __init__(self, head):
-		self.order = head
-
-	def connectHigherLink(self, chain):
-		self.higherOrderChains.append(chain)
-
-	def connectLowerLink(self, chain):
-		self.lowerOrderChains.append(chain)
-
-	# def buildChain(self):
-	# 	for order in orders:
-	# 		if order.target.unit != None:
-	# 			if order.target.unit.ordered:
-	# 				if addOrder(order.target.unit.order) == -1:
-	# 					# Chain has looped around.
-	# 					# Will have to find some method of working out what to do here.
-	# 					break
-	# 				# Else
-	# 					# The order is added to the chain.
-	# 			else:
-	# 				# The chain has ended and the final node has a defender
-	# 				order.target.defensiveStrength += 1
-	# 		# Else
-	# 			# The order is unopposed, marking the end of the chain.
-
-	def resolveOrders(self):
-		for chain in lowerOrderChains:
-			chain.resolveOrders()
-
-		for chain in higherOrderChains:
-			chain.resolveOrders()
 
 class Game(object):
 	"""
@@ -316,27 +234,14 @@ class Game(object):
 				return -1
 			unit = origin.unit
 
-			newOrder = Order(unit, origin, target)
+			newOrder = MoveOrder(unit, origin, target)
+			unit.order = newOrder
 			self.orders.append(newOrder)
 
 	def findOrder(self, unit, location, target):
 		for order in orders:
 			if order.unit == unit and order.location == location and order.target == target:
-				return order 
-
-	def futureOrders(self):
-		holdOrder = re.compile('^([af]|fleet|army) (...+)[ -](holds?)')
-		moveOrder = re.compile('^([af]|fleet|army) (...+)[ -](...+)$')
-		supportOrder = re.compile('^([af]|fleet|army) (...) s (...*)$')
-		convoyOrder = re.compile('^([af]|fleet|army) (...+) c (...*)$')
-
-		for order in self.futureOrders:
-			supportMatch = supportOrder.match(order.lower())
-			convoyMatch = convoyOrder.match(order.lower())
-
-			if supportMatch != None:
-				moveMatch = moveOrder.match(supportMatch.group(3))
-
+				return order
 
 	def connectTwoRegions(self, region1abbv, region2abbv):
 		region1 = None
@@ -367,35 +272,17 @@ class Game(object):
 		#print('regions connected')
 
 	def resolveOrders(self):
-		for order in self.orders:
-			if order.orderChain == None:
-
-
-
-		# #self.futureOrders()
-
-		# resoloutions = []
-
-		# #self.holdOrders()
-		# for order in self.orders:
-		# 	result = order.resolve()
-		# 	if not result == None:
-		# 		resoloutions.append(result)
-
-		# for item in resoloutions:
-		# 	unit = item[0]
-		# 	origin = item[1]
-		# 	target = item[2]
-		# 	if origin.unit == unit:
-		# 		origin.unit = None
-		# 	unit.location = target
-		# 	target.unit = unit
-		# 	target.owner = unit.owner
-
-	def holdOrders(self):
 		for unit in self.units:
-			if not unit.ordered:
-				unit.location.defensiveStrength += 1
+			if unit.order == None:
+				newOrder = HoldOrder(unit, unit.location)
+				unit.order = newOrder
+				self.orders.append(newOrder)
+				print('Hold order added.')
+
+		for order in self.orders:
+			if not order.resolved:
+				order.buildTree()
+				order.resolve()
 
 	def endTurn(self):
 		for unit in self.units:
@@ -542,9 +429,31 @@ class LandLockedOpposedTests(unittest.TestCase):
 	def test_attackAndEvacuate(self):
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.addOrder('A bbb-ddd')
+
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
 
+		#print('Loc A:', self.testUnitA.location == self.testLocationA)
+		self.assertEqual(self.testUnitA.location, self.testLocationB)
+		self.assertEqual(self.testUnitB.location, self.testLocationD)
+
+		self.assertEqual(self.testLocationA.unit, None)
+		self.assertEqual(self.testLocationD.unit, self.testUnitB)
+		self.assertEqual(self.testLocationB.unit, self.testUnitA)
+		
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 1)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 2)
+
+	def test_attackAndEvacuateRev(self):
+		self.testGame.addOrder('A bbb-ddd')
+		self.testGame.addOrder('A aaa-bbb')
+
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+
+		#print('Loc A:', self.testUnitA.location == self.testLocationA)
 		self.assertEqual(self.testUnitA.location, self.testLocationB)
 		self.assertEqual(self.testUnitB.location, self.testLocationD)
 
@@ -608,10 +517,12 @@ class LandLockedThreeFactionTests(unittest.TestCase):
 		self.testGame.units.append(self.testUnitC)
 
 	def test_stalledAttack(self):
+		print('<<HERE>>')
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.addOrder('A bbb-ddd')
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
+		print('<<AND HERE>>')
 
 		self.assertEqual(self.testUnitA.location, self.testLocationA)
 		self.assertEqual(self.testUnitB.location, self.testLocationB)
@@ -626,5 +537,6 @@ class LandLockedThreeFactionTests(unittest.TestCase):
 		self.assertEqual(self.testLocationC.owner, 3)
 		self.assertEqual(self.testLocationD.owner, 7)
 
+
 if __name__ == '__main__':
-    unittest.main()
+		unittest.main()
