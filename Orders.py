@@ -19,17 +19,27 @@ class MoveOrder(object):
 		self.target = target
 		self.lowerOrders = []
 		self.higherOrders = []
+		self.inTree = False
 		self.resolved = False
 
 		self.unit.ordered = True
 
 	def buildTree(self):
+		#print('Building Tree A')
 		for area in self.location.neighbours:
 			if area.unit != None:
-				if area.unit.order.target == self.location:
+				if area.unit.order.target == self.location and not area.unit.order.inTree:
 					self.higherOrders.append(area.unit.order)
-				if area == self.target:
+					area.unit.order.inTree = True
+				if area == self.target and not area.unit.order.inTree:
 					self.lowerOrders.append(area.unit.order)
+					area.unit.order.inTree = True
+		self.inTree = True
+		for node in self.lowerOrders:
+			node.buildTree()
+		for node in self.higherOrders:
+			node.buildTree()
+		#print('Tree Built')
 					
 
 	def resolve(self):
@@ -88,6 +98,7 @@ class HoldOrder(object):
 		self.target = None
 		self.lowerOrders = []
 		self.higherOrders = []
+		self.inTree = False
 		self.resolved = False
 
 		self.success = False
@@ -95,10 +106,18 @@ class HoldOrder(object):
 		self.unit.ordered = True
 
 	def buildTree(self):
+		#print('Building Tree B')
 		for area in self.location.neighbours:
 			if area.unit != None:
-				if area.unit.order.target == self:
+				if area.unit.order.target == self and not area.unit.order.inTree:
 					self.higherOrders.append(area.unit.order)
+					area.unit.order.inTree = True
+		self.inTree = True
+		for node in self.lowerOrders:
+			node.buildTree()
+		for node in self.higherOrders:
+			node.buildTree()
+		#print('Tree Built')
 					
 
 	def resolve(self):

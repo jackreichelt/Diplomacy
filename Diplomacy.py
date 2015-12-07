@@ -277,7 +277,6 @@ class Game(object):
 				newOrder = HoldOrder(unit, unit.location)
 				unit.order = newOrder
 				self.orders.append(newOrder)
-				print('Hold order added.')
 
 		for order in self.orders:
 			if not order.resolved:
@@ -517,12 +516,12 @@ class LandLockedThreeFactionTests(unittest.TestCase):
 		self.testGame.units.append(self.testUnitC)
 
 	def test_stalledAttack(self):
-		print('<<HERE>>')
+		#print('<<HERE>>')
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.addOrder('A bbb-ddd')
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
-		print('<<AND HERE>>')
+		#print('<<AND HERE>>')
 
 		self.assertEqual(self.testUnitA.location, self.testLocationA)
 		self.assertEqual(self.testUnitB.location, self.testLocationB)
