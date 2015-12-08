@@ -21,16 +21,26 @@ class MoveOrder(object):
 		self.higherOrders = []
 		self.inTree = False
 		self.resolved = False
+		self.paired = None
 
 		self.unit.ordered = True
+
+	def getType():
+		return 'move'
 
 	def buildTree(self):
 		#print('Building Tree A')
 		for area in self.location.neighbours:
 			if area.unit != None:
 				if area.unit.order.target == self.location and not area.unit.order.inTree:
-					self.higherOrders.append(area.unit.order)
-					area.unit.order.inTree = True
+					if self.target == area.unit.order.location:
+						self.paired = area.unit.order
+						area.unit.order.paired = self
+						area.unit.order.inTree = True
+						self.paired.buildTree()
+					else:
+						self.higherOrders.append(area.unit.order)
+						area.unit.order.inTree = True
 				if area == self.target and not area.unit.order.inTree:
 					self.lowerOrders.append(area.unit.order)
 					area.unit.order.inTree = True
@@ -49,16 +59,31 @@ class MoveOrder(object):
 		if not self.resolved:
 			# TODO: Need to add a special case for when units from two regions are
 			# both moving into each other.
-			if self.strength > self.target.defensiveStrength:
-				# TODO: Mark defending unit for retreat
-				self.unit.location = self.target
-				self.location.unit = None
-				self.target.unit = self.unit
-				self.target.owner = self.unit.owner
+			if self.paired:
+				if self.strength < self.paired.strength:
+					# TODO: Mark self for retreat
+					self.location.unit = sef.paired.unit
+					self.location.owner = self.paired.unit.owner
+					self.paired.unit.location = self.location
+					self.paired.location.unit = None
+				elif self.strength > self.paired.strength:
+					# TODO: Mark defending unit for retreat
+					self.unit.location = self.target
+					self.location.unit = None
+					self.target.unit = self.unit
+					self.target.owner = self.unit.owner
+				self.paired.resolved = True
 			else:
-				self.location.defensiveStrength += 1
+				if self.strength > self.target.defensiveStrength:
+					# TODO: Mark defending unit for retreat
+					self.unit.location = self.target
+					self.location.unit = None
+					self.target.unit = self.unit
+					self.target.owner = self.unit.owner
+				else:
+					self.location.defensiveStrength += 1
 
-			self.resolved = True
+				self.resolved = True
 
 		for parent in self.higherOrders:
 			parent.resolve()
@@ -104,6 +129,9 @@ class HoldOrder(object):
 		self.success = False
 
 		self.unit.ordered = True
+
+	def getType():
+		return 'hold'
 
 	def buildTree(self):
 		#print('Building Tree B')

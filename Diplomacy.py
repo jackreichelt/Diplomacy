@@ -465,6 +465,28 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.assertEqual(self.testLocationC.owner, 3)
 		self.assertEqual(self.testLocationD.owner, 2)
 
+	def test_attackDeadlock(self):
+		#print('<<HERE>>')
+		self.testGame.addOrder('A aaa-bbb')
+		self.testGame.addOrder('A bbb-aaa')
+
+		self.testGame.resolveOrders()
+		self.testGame.endTurn()
+		#print('<<AND HERE>>')
+
+		#print('Loc A:', self.testUnitA.location == self.testLocationA)
+		self.assertEqual(self.testUnitA.location, self.testLocationA)
+		self.assertEqual(self.testUnitB.location, self.testLocationB)
+
+		self.assertEqual(self.testLocationA.unit, self.testUnitA)
+		self.assertEqual(self.testLocationB.unit, self.testUnitB)
+		self.assertEqual(self.testLocationD.unit, None)
+		
+		self.assertEqual(self.testLocationA.owner, 1)
+		self.assertEqual(self.testLocationB.owner, 2)
+		self.assertEqual(self.testLocationC.owner, 3)
+		self.assertEqual(self.testLocationD.owner, 7)
+
 class LandLockedThreeFactionTests(unittest.TestCase):
 	def setUp(self):
 		self.testGame = Game(True)
