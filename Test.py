@@ -452,19 +452,20 @@ class LandDiagonalUnits(unittest.TestCase):
 		self.testLocationA.unit = self.testUnitA
 
 		self.testUnitC = Unit(0, self.testLocationC, 3)
-		self.testLocationD.unit = self.testUnitC
+		self.testLocationC.unit = self.testUnitC
 
 		self.testGame.units.append(self.testUnitA)
 		self.testGame.units.append(self.testUnitC)
 
 	def test_bounce(self):
-		#print('<<HERE>>')
+		print('<<HERE>>')
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.addOrder('A ccc-bbb')
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
-		#print('<<AND HERE>>')
-
+		print(self.testUnitA.location == self.testLocationB)
+		print('<<AND HERE>>')
+		
 		self.assertEqual(self.testUnitA.location, self.testLocationA)
 		self.assertEqual(self.testUnitC.location, self.testLocationC)
 

@@ -26,8 +26,10 @@ class MoveOrder(object):
 	def getType():
 		return 'move'
 
-	def buildTree(self):
+	def buildTree(self, fromNull = False):
 		#print('Building Tree A')
+
+		self.inTree = True
 		for area in self.location.neighbours:
 			if area.unit != None:
 				if area.unit.order.target == self.location and not area.unit.order.inTree:
@@ -42,9 +44,10 @@ class MoveOrder(object):
 				if area == self.target and not area.unit.order.inTree:
 					self.lowerOrders.append(area.unit.order)
 					area.unit.order.inTree = True
-			#else:
-			#	NullOrder(area)
-		self.inTree = True
+			else:
+				if fromNull:
+					NullOrder(area)
+		#self.inTree = True
 		for node in self.lowerOrders:
 			node.buildTree()
 		for node in self.higherOrders:
@@ -181,8 +184,11 @@ class NullOrder(object):
 
 	def buildTree(self):
 		for area in self.location.neighbours:
+			print('Reading neighbour', area.name)
 			if area.unit:
+				print('Unit found')
 				if area.unit.order.target == self.location:
+					print('Unit targetting me.')
 					self.lowerOrders.append(area.unit.order)
 					area.unit.order.higherOrders.append(self)
 					area.unit.order.inTree = True
@@ -193,7 +199,8 @@ class NullOrder(object):
 			highestOrder = None
 			willResolve = True
 			for order in self.lowerOrders:
-				order.buildTree()
+				if not order.inTree:
+					order.buildTree(True)
 				for child in order.lowerOrders:
 					child.resolve()
 				if highestOrder == None:
@@ -204,13 +211,15 @@ class NullOrder(object):
 						willResolve = True
 					elif highestOrder.strength == order.strength:
 						willResolve = False
+				print("Highest Strength:", highestOrder.strength)
+				print("Will resolve:", willResolve)
 
 			if not willResolve:
-				for order in orders:
+				for order in self.lowerOrders:
 					order.location.defensiveStrength += 1
 					order.resolved = True
 			else:
-				for order in orders:
+				for order in self.lowerOrders:
 					if order != highestOrder:
 						order.location.defensiveStrength += 1
 						order.resolved = True
