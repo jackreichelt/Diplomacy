@@ -31,15 +31,23 @@ class MoveOrder(object):
 	def buildTree(self):		
 		self.inTree = True
 
-		# The target location's order.
-		if self.target.unit != None:
-			self.lowerOrders.append(self.target.unit.order)
-
 		# Any MoveOrders that are targeting me.
 		for area in self.location.neighbours:
 			if area.unit != None:
-				if area.unit.order.target == self.location:
-					self.higherOrders.append(area.unit.order)
+				if area.unit.order.target == self.location and not area.unit.order.inTree:
+					if area.unit.order.location == self.target:
+						# Deadlocking with me. i.e. I'm targetting them too.
+						self.paired.append(area.unit.order)
+						area.unit.order.paired = self.paired
+					else:
+						# Just targetting me.
+						self.higherOrders.append(area.unit.order)
+					area.unit.order.buildTree()
+
+		# The target location's order.
+		if self.target.unit != None:
+			if not self.target.unit.order.inTree:
+				self.lowerOrders.append(self.target.unit.order)
 		
 		# Any MoveOrders that are targeting my target.
 		for area in self.target.neighbours:
@@ -50,31 +58,53 @@ class MoveOrder(object):
 					area.unit.order.buildTree()
 
 		for node in self.lowerOrders:
-			node.buildTree()
+			if not node.inTree:
+				node.buildTree()
 		for node in self.higherOrders:
-			node.buildTree()
+			if not node.inTree:
+				node.buildTree()
+
+	def fail(self):
+		if not self.resolved:
+			self.strength = 1
+			self.target = None
+			self.location.defensiveStrength += 1
+			self.resolved = True
+
+	def resolveTree(self):
+		for child in self.lowerOrders:
+			if not child.resolved:
+				child.resolveTree()
+
+		self.resolve()
+
+		for parent in self.higherOrders:
+			parent.resolveTree()
 
 	def resolve(self):
-		for child in self.lowerOrders:
-			child.resolve()
-		
 		if not self.resolved:
 			# TODO: Need to add a special case for when units from two regions are
 			# both moving into each other.
-			if self.paired:
-				if self.strength < self.paired.strength:
-					# TODO: Mark self for retreat
-					self.location.unit = sef.paired.unit
-					self.location.owner = self.paired.unit.owner
-					self.paired.unit.location = self.location
-					self.paired.location.unit = None
-				elif self.strength > self.paired.strength:
-					# TODO: Mark defending unit for retreat
-					self.unit.location = self.target
-					self.location.unit = None
-					self.target.unit = self.unit
-					self.target.owner = self.unit.owner
-				self.paired.resolved = True
+			if len(self.paired) > 1:
+
+				for pair in self.paired[1:]:
+					for child in pair.lowerOrders:
+						child.resolve()
+
+				maxStrength = 0
+				strongest = []
+				for order in self.paired:
+					if order.strength > maxStrength:
+						maxStrength = order.strength
+						strongest = [order]
+					elif order.strength == maxStrength:
+						strongest.append(order)
+				if len(strongest) == 1:
+					print('resolving')
+					strongest[1].resolve()
+				for order in self.paired:
+					print('failing')
+					order.fail()
 			else:
 				if self.strength > self.target.defensiveStrength:
 					# TODO: Mark defending unit for retreat
@@ -86,21 +116,6 @@ class MoveOrder(object):
 					self.location.defensiveStrength += 1
 
 				self.resolved = True
-
-		for parent in self.higherOrders:
-			parent.resolve()
-		# if self.strength > self.target.defensiveStrength:
-		# #   self.success = True
-		# #   return([self.unit, self.location, self.target])
-		# # else:
-		# #   self.location.defensiveStrength += 1
-		# 	self.location.unit = None
-		# 	self.target.unit = self.unit
-		# 	self.unit.location = self.target
-		# 	self.target.owner = self.location.owner
-		# else:
-		# 	self.location.defensiveStrength += 1
-		# #TODO: Mark unit in target location for retreat.
 
 class HoldOrder(object):
 	"""
@@ -144,18 +159,21 @@ class HoldOrder(object):
 		for node in self.higherOrders:
 			node.buildTree()
 		#print('Tree Built')
-					
+			
+	def resolveTree(self):
+		for child in self.lowerOrders:
+			if not child.resolved:
+				child.resolveTree()
+
+		self.resolve()
+
+		for parent in self.higherOrders:
+			parent.resolveTree()		
 
 	def resolve(self):
-		for child in self.lowerOrders:
-			child.resolve()
-
 		if not self.resolved:
 			self.location.defensiveStrength += 1
 			self.resolved = True
-
-		for parent in self.higherOrders:
-			parent.resolve()
 
 class NullOrder(object):
 	"""
@@ -191,6 +209,16 @@ class NullOrder(object):
 					self.lowerOrders.append(area.unit.order)
 					area.unit.order.higherOrders.append(self)
 					area.unit.order.inTree = True
+
+	def resolveTree(self):
+		for child in self.lowerOrders:
+			if not child.resolved:
+				child.resolveTree()
+
+		self.resolve()
+
+		for parent in self.higherOrders:
+			parent.resolveTree()
 
 	def resolve(self):
 		if not self.resolved:

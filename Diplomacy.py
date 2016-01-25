@@ -281,7 +281,7 @@ class Game(object):
 		for order in self.orders:
 			if not order.resolved:
 				order.buildTree()
-				order.resolve()
+				order.resolveTree()
 
 	def endTurn(self):
 		for unit in self.units:

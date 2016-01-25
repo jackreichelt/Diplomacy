@@ -457,15 +457,19 @@ class LandDiagonalUnits(unittest.TestCase):
 		self.testGame.units.append(self.testUnitC)
 
 	def test_bounce(self):
-		#print('<<HERE>>')
+		print('<<HERE>>')
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.addOrder('A ccc-bbb')
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
-		#print('<<AND HERE>>')
 
-		print(self.testUnitA.location == self.testLocationB)
-		print(self.testUnitC.location == self.testLocationC)
+
+		print('A has moved:', self.testUnitA.location == self.testLocationB)
+		print('C has moved:', self.testUnitC.location == self.testLocationB)
+		print('A has remained:', self.testUnitA.location == self.testLocationA)
+		print('C has remained:', self.testUnitC.location == self.testLocationC)
+
+		print('<<AND HERE>>')
 		self.assertEqual(self.testUnitA.location, self.testLocationA)
 		self.assertEqual(self.testUnitC.location, self.testLocationC)
 
@@ -478,6 +482,7 @@ class LandDiagonalUnits(unittest.TestCase):
 		self.assertEqual(self.testLocationB.owner, 2)
 		self.assertEqual(self.testLocationC.owner, 3)
 		self.assertEqual(self.testLocationD.owner, 4)
+		print('<<ALL PASSED>>')
 
 
 if __name__ == '__main__':
