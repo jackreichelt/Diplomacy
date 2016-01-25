@@ -7,6 +7,8 @@ class MoveOrder(object):
 		1 base, plus 1 per support.
 	The lowerOrders and higherOrders variables store the orders above and
 		below it on the tree.
+	inTree and resolved are markers to show stages of processing.
+	paired is a list that shows all orders to be resolved simultaneously.
 	"""
 	target = None
 
@@ -19,41 +21,38 @@ class MoveOrder(object):
 		self.higherOrders = []
 		self.inTree = False
 		self.resolved = False
-		self.paired = None
+		self.paired = [self]
 
 		self.unit.ordered = True
 
 	def getType():
 		return 'move'
 
-	def buildTree(self, fromNull = False):
-		#print('Building Tree A')
-
+	def buildTree(self):		
 		self.inTree = True
+
+		# The target location's order.
+		if self.target.unit != None:
+			self.lowerOrders.append(self.target.unit.order)
+
+		# Any MoveOrders that are targeting me.
 		for area in self.location.neighbours:
 			if area.unit != None:
-				if area.unit.order.target == self.location and not area.unit.order.inTree:
-					if self.target == area.unit.order.location:
-						self.paired = area.unit.order
-						area.unit.order.paired = self
-						area.unit.order.inTree = True
-						self.paired.buildTree()
-					else:
-						self.higherOrders.append(area.unit.order)
-						area.unit.order.inTree = True
-				if area == self.target and not area.unit.order.inTree:
-					self.lowerOrders.append(area.unit.order)
-					area.unit.order.inTree = True
-			else:
-				if fromNull:
-					NullOrder(area)
-		#self.inTree = True
+				if area.unit.order.target == self.location:
+					self.higherOrders.append(area.unit.order)
+		
+		# Any MoveOrders that are targeting my target.
+		for area in self.target.neighbours:
+			if area != self and area.unit != None:
+				if area.unit.order.inTree == False and area.unit.order.target == self.target:
+					self.paired.append(area.unit.order)
+					area.unit.order.paired = self.paired
+					area.unit.order.buildTree()
+
 		for node in self.lowerOrders:
 			node.buildTree()
 		for node in self.higherOrders:
 			node.buildTree()
-		#print('Tree Built')
-					
 
 	def resolve(self):
 		for child in self.lowerOrders:
