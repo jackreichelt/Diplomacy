@@ -5,10 +5,8 @@ class MoveOrder(object):
 	The location variable shows the location of that unit. (Redundant?)
 	The strength is the effective strength of the action.
 		1 base, plus 1 per support.
-	The lowerOrders and higherOrders variables store the 
-
-	Possibly also need to make different Order classes, on the same template.
-	This would allow a different resolution command, and such.
+	The lowerOrders and higherOrders variables store the orders above and
+		below it on the tree.
 	"""
 	target = None
 
@@ -28,8 +26,10 @@ class MoveOrder(object):
 	def getType():
 		return 'move'
 
-	def buildTree(self):
+	def buildTree(self, fromNull = False):
 		#print('Building Tree A')
+
+		self.inTree = True
 		for area in self.location.neighbours:
 			if area.unit != None:
 				if area.unit.order.target == self.location and not area.unit.order.inTree:
@@ -44,7 +44,10 @@ class MoveOrder(object):
 				if area == self.target and not area.unit.order.inTree:
 					self.lowerOrders.append(area.unit.order)
 					area.unit.order.inTree = True
-		self.inTree = True
+			else:
+				if fromNull:
+					NullOrder(area)
+		#self.inTree = True
 		for node in self.lowerOrders:
 			node.buildTree()
 		for node in self.higherOrders:
@@ -100,19 +103,15 @@ class MoveOrder(object):
 		# 	self.location.defensiveStrength += 1
 		# #TODO: Mark unit in target location for retreat.
 
-
-
 class HoldOrder(object):
 	"""
-	The Order class represents a move order that a unit has been given.
+	The HoldOrder class represents a unit being told to hold, or given no order..
 	The unit shows which unit is being given the order.
 	The location variable shows the location of that unit. (Redundant?)
 	The strength is the effective strength of the action.
 		1 base, plus 1 per support.
-	The lowerOrders and higherOrders variables store the 
-
-	Possibly also need to make different Order classes, on the same template.
-	This would allow a different resolution command, and such.
+	The lowerOrders and higherOrders variables store the orders above and
+		below it on the tree.
 	"""
 	target = None
 
@@ -158,3 +157,71 @@ class HoldOrder(object):
 
 		for parent in self.higherOrders:
 			parent.resolve()
+
+class NullOrder(object):
+	"""
+	The NullOrder class represents a region having no unit to order.
+	This is used for determining if two otherwise disconnected units
+		are attempting to take the same region.
+	"""
+	def __init__(self, location):
+		self.unit = None
+		self.location = location
+		self.strength = 0
+		self.target = None
+		self.lowerOrders = []
+		self.higherOrders = []
+		self.inTree = True
+		self.resolved = False
+
+		self.success = False
+
+		self.buildTree()
+		self.resolve()
+
+	def getType():
+		return 'null'
+
+	def buildTree(self):
+		for area in self.location.neighbours:
+			print('Reading neighbour', area.name)
+			if area.unit:
+				print('Unit found')
+				if area.unit.order.target == self.location:
+					print('Unit targetting me.')
+					self.lowerOrders.append(area.unit.order)
+					area.unit.order.higherOrders.append(self)
+					area.unit.order.inTree = True
+
+	def resolve(self):
+		if not self.resolved:
+			self.resolved = True
+			highestOrder = None
+			willResolve = True
+			for order in self.lowerOrders:
+				if not order.inTree:
+					order.buildTree(True)
+				for child in order.lowerOrders:
+					child.resolve()
+				if highestOrder == None:
+					highestOrder = order
+				else:
+					if highestOrder.strength > order.strength:
+						highestOrder = order
+						willResolve = True
+					elif highestOrder.strength == order.strength:
+						willResolve = False
+				print("Highest Strength:", highestOrder.strength)
+				print("Will resolve:", willResolve)
+
+			if not willResolve:
+				for order in self.lowerOrders:
+					order.location.defensiveStrength += 1
+					order.resolved = True
+			else:
+				for order in self.lowerOrders:
+					if order != highestOrder:
+						order.location.defensiveStrength += 1
+						order.resolved = True
+					else:
+						order.resolve()
