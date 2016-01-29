@@ -32,6 +32,31 @@ class MoveOrder(object):
 	def buildTree(self):		
 		self.inTree = True
 
+		# Check for a loop.
+		checkLocation = self.target
+		loopOrders = [self]
+		while checkLocation != None and checkLocation not in loopOrders:
+			print('checkLocation:', checkLocation)
+			if checkLocation.unit == None:
+				checkLocation = None
+			else:
+				loopOrders.append(checkLocation.unit.order)
+				checkLocation = checkLocation.unit.order.target
+
+		if checkLocation == self.location:
+			#print('loop found')
+			# A loop has been found.
+			if len(loopOrders) == 2:
+				for order in loopOrders:
+					order.fail()
+					return
+			for order in loopOrders:
+				order.unit.location = order.target
+				order.target.unit = order.unit
+				order.resolved = True
+				order.inTree = True
+				return
+
 		# Any MoveOrders that are targeting me.
 		for area in self.location.neighbours:
 			if area.unit != None:

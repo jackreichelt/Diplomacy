@@ -174,13 +174,13 @@ class LandLockedOpposedTests(unittest.TestCase):
 		self.assertEqual(self.testLocationD.owner, 2)
 
 	def test_attackDeadlock(self):
-		#print('<<HERE>>')
+		print('<<HERE>>')
 		self.testGame.addOrder('A aaa-bbb')
 		self.testGame.addOrder('A bbb-aaa')
 
 		self.testGame.resolveOrders()
 		self.testGame.endTurn()
-		#print('<<AND HERE>>')
+		print('<<AND HERE>>')
 
 		#print('Loc A:', self.testUnitA.location == self.testLocationA)
 		self.assertEqual(self.testUnitA.location, self.testLocationA)
