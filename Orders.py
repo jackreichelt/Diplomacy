@@ -22,6 +22,7 @@ class MoveOrder(object):
 		self.inTree = False
 		self.resolved = False
 		self.paired = [self]
+		self.nullFound = False
 
 		self.unit.ordered = True
 
@@ -44,10 +45,16 @@ class MoveOrder(object):
 						self.higherOrders.append(area.unit.order)
 					area.unit.order.buildTree()
 
-		# The target location's order.
+		# The target location's order. If there is no unit, create a NullOrder
 		if self.target.unit != None:
 			if not self.target.unit.order.inTree:
+				# TODO: Work out how this works for Support and Convoy orders.
 				self.lowerOrders.append(self.target.unit.order)
+		elif not self.nullFound:
+			newNull = NullOrder(self.target)
+			self.lowerOrders.append(newNull)
+			self.nullFound = True
+			newNull.buildTree()
 		
 		# Any MoveOrders that are targeting my target.
 		for area in self.target.neighbours:
@@ -81,6 +88,13 @@ class MoveOrder(object):
 		for parent in self.higherOrders:
 			parent.resolveTree()
 
+	def resolveLower(self, exclude = None):
+		for child in self.lowerOrders:
+			if not child.resolved and not child == exclude:
+				child.resolveLower()
+
+			child.resolve()
+
 	def resolve(self):
 		if not self.resolved:
 			# TODO: Need to add a special case for when units from two regions are
@@ -100,10 +114,8 @@ class MoveOrder(object):
 					elif order.strength == maxStrength:
 						strongest.append(order)
 				if len(strongest) == 1:
-					print('resolving')
-					strongest[1].resolve()
+					strongest[0].resolve()
 				for order in self.paired:
-					print('failing')
 					order.fail()
 			else:
 				if self.strength > self.target.defensiveStrength:
@@ -147,7 +159,6 @@ class HoldOrder(object):
 		return 'hold'
 
 	def buildTree(self):
-		#print('Building Tree B')
 		for area in self.location.neighbours:
 			if area.unit != None:
 				if area.unit.order.target == self and not area.unit.order.inTree:
@@ -158,7 +169,6 @@ class HoldOrder(object):
 			node.buildTree()
 		for node in self.higherOrders:
 			node.buildTree()
-		#print('Tree Built')
 			
 	def resolveTree(self):
 		for child in self.lowerOrders:
@@ -168,7 +178,14 @@ class HoldOrder(object):
 		self.resolve()
 
 		for parent in self.higherOrders:
-			parent.resolveTree()		
+			parent.resolveTree()
+
+	def resolveLower(self, exclude = None):
+		for child in self.lowerOrders:
+			if not child.resolved and not child == exclude:
+				child.resolveLower()
+
+			child.resolve()
 
 	def resolve(self):
 		if not self.resolved:
@@ -180,20 +197,20 @@ class NullOrder(object):
 	The NullOrder class represents a region having no unit to order.
 	This is used for determining if two otherwise disconnected units
 		are attempting to take the same region.
+	The higherOrders variable stores the orders above it on the tree. A NullOrder
+		should have no children.
 	"""
 	def __init__(self, location):
 		self.unit = None
 		self.location = location
 		self.strength = 0
 		self.target = None
-		self.lowerOrders = []
 		self.higherOrders = []
 		self.inTree = True
 		self.resolved = False
 
 		self.success = False
 
-		self.buildTree()
 		self.resolve()
 
 	def getType():
@@ -201,54 +218,37 @@ class NullOrder(object):
 
 	def buildTree(self):
 		for area in self.location.neighbours:
-			print('Reading neighbour', area.name)
 			if area.unit:
-				print('Unit found')
 				if area.unit.order.target == self.location:
-					print('Unit targetting me.')
-					self.lowerOrders.append(area.unit.order)
-					area.unit.order.higherOrders.append(self)
+					self.higherOrders.append(area.unit.order)
+					area.unit.order.lowerOrders.append(self)
 					area.unit.order.inTree = True
+					area.unit.order.nullFound = True
+					area.unit.order.buildTree()
 
 	def resolveTree(self):
-		for child in self.lowerOrders:
-			if not child.resolved:
-				child.resolveTree()
+		for parent in self.higherOrders:
+			for child in parent.lowerOrders:
+				if child != self:
+					child.resolveLower(self)
 
 		self.resolve()
-
-		for parent in self.higherOrders:
-			parent.resolveTree()
 
 	def resolve(self):
 		if not self.resolved:
 			self.resolved = True
-			highestOrder = None
-			willResolve = True
-			for order in self.lowerOrders:
-				if not order.inTree:
-					order.buildTree(True)
-				for child in order.lowerOrders:
-					child.resolve()
-				if highestOrder == None:
-					highestOrder = order
-				else:
-					if highestOrder.strength > order.strength:
-						highestOrder = order
-						willResolve = True
-					elif highestOrder.strength == order.strength:
-						willResolve = False
-				print("Highest Strength:", highestOrder.strength)
-				print("Will resolve:", willResolve)
 
-			if not willResolve:
-				for order in self.lowerOrders:
-					order.location.defensiveStrength += 1
-					order.resolved = True
-			else:
-				for order in self.lowerOrders:
-					if order != highestOrder:
-						order.location.defensiveStrength += 1
-						order.resolved = True
-					else:
-						order.resolve()
+			highestStrength = 0
+			highestOrders = []
+
+			for order in self.higherOrders:
+				if order.strength > highestStrength:
+					highestStrength = order.strength
+					highestOrders = [order]
+				elif order.strength == highestStrength:
+					highestOrders.append(order)
+
+			if len(highestOrders) == 1:
+				highestOrders[0].resolve()
+			for order in self.higherOrders:
+				order.fail()
