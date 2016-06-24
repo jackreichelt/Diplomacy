@@ -36,7 +36,6 @@ class MoveOrder(object):
     checkLocation = self.target
     loopOrders = [self]
     while checkLocation != None and checkLocation not in loopOrders:
-      print('checkLocation:', checkLocation)
       if checkLocation.unit == None:
         checkLocation = None
       else:
