@@ -146,6 +146,12 @@ class Unit(object):
     self.owner = owner
     self.order = None
 
+  def move_to(self, target):
+    self.location.unit = None
+    target.unit = self
+    target.owner = self.owner
+    self.location = target
+
 class Game(object):
   """
   The main game class.
@@ -233,7 +239,7 @@ class Game(object):
         return -1
       unit = origin.unit
 
-      newOrder = MoveOrder(unit, origin, target)
+      newOrder = Move(unit, origin, target)
       unit.order = newOrder
       self.orders.append(newOrder)
 
@@ -273,14 +279,21 @@ class Game(object):
   def resolveOrders(self):
     for unit in self.units:
       if unit.order == None:
-        newOrder = HoldOrder(unit, unit.location)
+        newOrder = Hold(unit, unit.location)
         unit.order = newOrder
         self.orders.append(newOrder)
 
     for order in self.orders:
-      if not order.resolved:
-        order.buildTree()
-        order.resolveTree()
+      if not order.inTree:
+        order.build_graph()
+
+    for order in self.orders:
+      if not order.processed:
+        order.process_graph()
+
+    for order in self.orders:
+      if order.approved and not order.resolved:
+        order.enact()
 
   def endTurn(self):
     for unit in self.units:
