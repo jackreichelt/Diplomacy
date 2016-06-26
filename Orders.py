@@ -37,6 +37,7 @@ class Order(object):
     for area in self.location.neighbours:
       if area.unit != None:
         if area.unit.order.inTree == False:
+          # area.unit.order.inTree = True
           if area == self.target:
             if TARGETING_ORDER_PRIORITIES[self.type][area.unit.order.type] == 'before':
               self.before.append(area.unit.order)
@@ -80,39 +81,16 @@ class Move(Order):
     self.target = target
 
   def validate(self):
-    print('Unit at region {}, targeting {}, with strength {} against strength {}'.format(self.location.name, self.target.name, self.strength, self.target.defensiveStrength))
     if self.target.defensiveStrength < self.strength:
-      print('  So it is approved.')
       self.approved = True
+      return self.target
     else:
       self.location.defensiveStrength += 1
       self.resolved = True
 
   def enact(self):
-    order_strengths = {}
-
-    print("Checking region: {}".format(self.target.name))
-
-    for area in self.target.neighbours:
-      print('  Adjacent region: {}.'.format(area.name))
-      if area.unit != None:
-        print('    Region has a unit with order type {}.'.format(area.unit.order.type))
-        print('      Targeting {}. Approval status: {}.'.format(area.unit.order.target.name, area.unit.order.approved))
-        if area.unit.order.target == self.target and area.unit.order.approved:
-          print('      Approved.')
-          if area.unit.order.strength in order_strengths:
-            order_strengths[area.unit.order.strength].append(area.unit.order)
-          else:
-            order_strengths[area.unit.order.strength] = [(area.unit.order)]
-          area.unit.order.resolved = True
-
-    print('Order Strengths: {}'.format(order_strengths))
-
-    max_strength = max(order_strengths)
-
-    if len(order_strengths[max_strength]) == 1:
-      order = order_strengths[max_strength][0]
-      order.unit.move_to(order.target)
+    self.unit.move_to(self.target)
+    self.resolved = True
 
 class Hold(Order):
   """

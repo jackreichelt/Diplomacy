@@ -470,25 +470,5 @@ class LandDiagonalUnits(unittest.TestCase):
     self.assertEqual(self.testLocationC.owner, 3)
     self.assertEqual(self.testLocationD.owner, 4)
 
-  def test_bounceBuff(self):
-    self.testGame.addOrder('A aaa-bbb')
-    self.testGame.addOrder('A ccc-bbb')
-    self.testGame.resolveOrders()
-    self.testGame.endTurn()
-
-    self.assertEqual(self.testUnitA.location, self.testLocationA)
-    self.assertEqual(self.testUnitC.location, self.testLocationC)
-
-    self.assertEqual(self.testLocationA.unit, self.testUnitA)
-    self.assertEqual(self.testLocationB.unit, None)
-    self.assertEqual(self.testLocationC.unit, self.testUnitC)
-    self.assertEqual(self.testLocationD.unit, None)
-
-    self.assertEqual(self.testLocationA.owner, 1)
-    self.assertEqual(self.testLocationB.owner, 2)
-    self.assertEqual(self.testLocationC.owner, 3)
-    self.assertEqual(self.testLocationD.owner, 4)
-
-
 if __name__ == '__main__':
     unittest.main()
