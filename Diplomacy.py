@@ -132,6 +132,11 @@ class Region(object):
       return True
     return False
 
+  def is_coastal(self):
+    for region in self.neighbours:
+      if region.myType == Type.sea:
+        return True
+    return False
 
 class Unit(object):
   """
@@ -147,7 +152,8 @@ class Unit(object):
     self.order = None
 
   def move_to(self, target):
-    self.location.unit = None
+    if self.location.unit == self:
+      self.location.unit = None
     target.unit = self
     target.owner = self.owner
     self.location = target

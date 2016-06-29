@@ -83,14 +83,19 @@ class Move(Order):
   def validate(self):
     if self.target.defensiveStrength < self.strength:
       self.approved = True
-      return self.target
+      # return self.target
     else:
       self.location.defensiveStrength += 1
       self.resolved = True
 
   def enact(self):
-    self.unit.move_to(self.target)
     self.resolved = True
+    for area in self.target.neighbours:
+      if area.unit != None and area != self.location:
+        if area.unit.order.target == self.target and area.unit.order.strength >= self.strength:
+          return
+
+    self.unit.move_to(self.target)
 
 class Hold(Order):
   """
