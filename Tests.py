@@ -174,25 +174,25 @@ class LandLockedOpposedTests(unittest.TestCase):
     self.assertEqual(self.testLocationC.owner, 3)
     self.assertEqual(self.testLocationD.owner, 2)
 
-  # def test_attackDeadlock(self):
-  #   self.testGame.addOrder('A aaa-bbb')
-  #   self.testGame.addOrder('A bbb-aaa')
-  #
-  #   self.testGame.resolveOrders()
-  #   self.testGame.endTurn()
-  #
-  #   #print('Loc A:', self.testUnitA.location == self.testLocationA)
-  #   self.assertEqual(self.testUnitA.location, self.testLocationA)
-  #   self.assertEqual(self.testUnitB.location, self.testLocationB)
-  #
-  #   self.assertEqual(self.testLocationA.unit, self.testUnitA)
-  #   self.assertEqual(self.testLocationB.unit, self.testUnitB)
-  #   self.assertEqual(self.testLocationD.unit, None)
-  #
-  #   self.assertEqual(self.testLocationA.owner, 1)
-  #   self.assertEqual(self.testLocationB.owner, 2)
-  #   self.assertEqual(self.testLocationC.owner, 3)
-  #   self.assertEqual(self.testLocationD.owner, 7)
+  def test_attackDeadlock(self):
+    self.testGame.addOrder('A aaa-bbb')
+    self.testGame.addOrder('A bbb-aaa')
+
+    self.testGame.resolveOrders()
+    self.testGame.endTurn()
+
+    #print('Loc A:', self.testUnitA.location == self.testLocationA)
+    self.assertEqual(self.testUnitA.location, self.testLocationA)
+    self.assertEqual(self.testUnitB.location, self.testLocationB)
+
+    self.assertEqual(self.testLocationA.unit, self.testUnitA)
+    self.assertEqual(self.testLocationB.unit, self.testUnitB)
+    self.assertEqual(self.testLocationD.unit, None)
+
+    self.assertEqual(self.testLocationA.owner, 1)
+    self.assertEqual(self.testLocationB.owner, 2)
+    self.assertEqual(self.testLocationC.owner, 3)
+    self.assertEqual(self.testLocationD.owner, 7)
 
 class LandLockedThreeFactionTests(unittest.TestCase):
   def setUp(self):
@@ -311,26 +311,26 @@ class LandLockedTriangleLoop(unittest.TestCase):
     self.testGame.units.append(self.testUnitB)
     self.testGame.units.append(self.testUnitC)
 
-  # def test_ThreeLoop(self):
-  #   #print('<<HERE>>')
-  #   self.testGame.addOrder('A aaa-bbb')
-  #   self.testGame.addOrder('A bbb-ccc')
-  #   self.testGame.addOrder('A ccc-aaa')
-  #   self.testGame.resolveOrders()
-  #   self.testGame.endTurn()
-  #   #print('<<AND HERE>>')
-  #
-  #   self.assertEqual(self.testUnitA.location, self.testLocationB)
-  #   self.assertEqual(self.testUnitB.location, self.testLocationC)
-  #   self.assertEqual(self.testUnitC.location, self.testLocationA)
-  #
-  #   self.assertEqual(self.testLocationA.unit, self.testUnitC)
-  #   self.assertEqual(self.testLocationB.unit, self.testUnitA)
-  #   self.assertEqual(self.testLocationC.unit, self.testUnitB)
-  #
-  #   self.assertEqual(self.testLocationA.owner, 3)
-  #   self.assertEqual(self.testLocationB.owner, 1)
-  #   self.assertEqual(self.testLocationC.owner, 2)
+  def test_ThreeLoop(self):
+    #print('<<HERE>>')
+    self.testGame.addOrder('A aaa-bbb')
+    self.testGame.addOrder('A bbb-ccc')
+    self.testGame.addOrder('A ccc-aaa')
+    self.testGame.resolveOrders()
+    self.testGame.endTurn()
+    #print('<<AND HERE>>')
+
+    self.assertEqual(self.testUnitA.location, self.testLocationB)
+    self.assertEqual(self.testUnitB.location, self.testLocationC)
+    self.assertEqual(self.testUnitC.location, self.testLocationA)
+
+    self.assertEqual(self.testLocationA.unit, self.testUnitC)
+    self.assertEqual(self.testLocationB.unit, self.testUnitA)
+    self.assertEqual(self.testLocationC.unit, self.testUnitB)
+
+    self.assertEqual(self.testLocationA.owner, 3)
+    self.assertEqual(self.testLocationB.owner, 1)
+    self.assertEqual(self.testLocationC.owner, 2)
 
 class LandLockedSquareLoop(unittest.TestCase):
   def setUp(self):

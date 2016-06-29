@@ -57,10 +57,11 @@ class Order(object):
       if order.inTree == False:
         order.build_graph()
 
-  def process_graph(self):
-    for order in self.before:
-      if order.processed == False:
-        order.process_graph()
+  def process_graph(self, chain):
+    if self.location.name not in chain:
+      for order in self.before:
+        if order.processed == False:
+          order.process_graph(chain + [self.location.name])
 
     if self.processed == False:
       self.validate()
@@ -68,7 +69,7 @@ class Order(object):
 
     for order in self.after:
       if order.processed == False:
-        order.process_graph()
+        order.process_graph([])
 
 class Move(Order):
   """

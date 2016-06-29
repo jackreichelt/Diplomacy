@@ -295,7 +295,7 @@ class Game(object):
 
     for order in self.orders:
       if not order.processed:
-        order.process_graph()
+        order.process_graph([])
 
     for order in self.orders:
       if order.approved and not order.resolved:
