@@ -134,12 +134,12 @@ class Region(object):
 
   def is_coastal(self):
     for region in self.neighbours:
-      if region.myType == Type.sea:
+      if region.myType == 1:
         return True
     return False
 
   def navy_accessible(self):
-    return self.is_coastal() or self.myType == Type.sea
+    return self.is_coastal() or self.myType == 1
 
 class Unit(object):
   """
@@ -246,6 +246,11 @@ class Game(object):
       if origin.unit == None or origin.unit.unitType != Type.stringToInt(moveMatch.group(1)):
         # Invalid Order if there is no unit at the origin, or if the type doesn't match.
         return -1
+
+      print('Region {} is navy accessible: {}'.format(target.name, target.navy_accessible()))
+      if origin.unit.unitType == 1 and target.navy_accessible() == False:
+        return -1
+
       unit = origin.unit
 
       newOrder = Move(unit, origin, target)

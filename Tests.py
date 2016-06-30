@@ -470,5 +470,70 @@ class LandDiagonalUnits(unittest.TestCase):
     self.assertEqual(self.testLocationC.owner, 3)
     self.assertEqual(self.testLocationD.owner, 4)
 
+class CoastalMovements(unittest.TestCase):
+  def setUp(self):
+    self.testGame = Game(True)
+    self.testGame.regions = []
+    self.testGame.units = []
+    self.testGame.regionDict = {}
+
+    self.testLocationA = Region('aaa', 'aaa', 1, 1)
+    self.testLocationB = Region('bbb', 'bbb', 0, 1)
+    self.testLocationC = Region('ccc', 'ccc', 0, 1)
+    self.testLocationD = Region('ddd', 'ddd', 1, 1)
+    self.testLocationE = Region('eee', 'eee', 0, 1)
+    self.testLocationF = Region('fff', 'fff', 0, 1)
+    """
+    Test Region Layout
+    ~~~----
+    |A|B|C|
+    ~~~----
+    |D|E|F|
+    ~~~----
+    All regions are land except A and D.
+    Diagonal regions ARE NOT adjacent.
+    Region A has a navy in it.
+    """
+    self.testGame.addRegion(self.testLocationA)
+    self.testGame.addRegion(self.testLocationB)
+    self.testGame.addRegion(self.testLocationC)
+    self.testGame.addRegion(self.testLocationD)
+    self.testGame.addRegion(self.testLocationE)
+    self.testGame.addRegion(self.testLocationF)
+
+    self.testGame.connectTwoRegions('aaa', 'bbb')
+    self.testGame.connectTwoRegions('aaa', 'ddd')
+    self.testGame.connectTwoRegions('ddd', 'eee')
+    self.testGame.connectTwoRegions('bbb', 'ccc')
+    self.testGame.connectTwoRegions('bbb', 'eee')
+    self.testGame.connectTwoRegions('eee', 'fff')
+    self.testGame.connectTwoRegions('ccc', 'fff')
+
+    self.testUnitA = Unit(1, self.testLocationA, 1)
+    self.testLocationA.unit = self.testUnitA
+
+    self.testGame.units.append(self.testUnitA)
+
+  def test_coastal_movement(self):
+    self.testGame.addOrder('F aaa-bbb')
+    self.testGame.resolveOrders()
+    self.testGame.endTurn()
+    self.assertEqual(self.testUnitA.location, self.testLocationB)
+
+    self.testGame.addOrder('F bbb-ccc')
+    self.testGame.resolveOrders()
+    self.testGame.endTurn()
+    self.assertEqual(self.testUnitA.location, self.testLocationB)
+
+    self.testGame.addOrder('F bbb-eee')
+    self.testGame.resolveOrders()
+    self.testGame.endTurn()
+    self.assertEqual(self.testUnitA.location, self.testLocationE)
+
+    self.testGame.addOrder('F eee-ddd')
+    self.testGame.resolveOrders()
+    self.testGame.endTurn()
+    self.assertEqual(self.testUnitA.location, self.testLocationD)
+
 if __name__ == '__main__':
     unittest.main()
