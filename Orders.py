@@ -89,6 +89,12 @@ class Move(Order):
       self.location.defensiveStrength += 1
       self.resolved = True
 
+    if self.target.unit != None:
+      if self.target.unit.order.target == self.location and self.target.unit.order.strength >= self.strength:
+        self.approved = False
+        self.location.defensiveStrength += 1
+        self.resolved = True
+
   def enact(self):
     self.resolved = True
     for area in self.target.neighbours:

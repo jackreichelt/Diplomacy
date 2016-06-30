@@ -138,6 +138,9 @@ class Region(object):
         return True
     return False
 
+  def navy_accessible(self):
+    return self.is_coastal() or self.myType == Type.sea
+
 class Unit(object):
   """
   The unit class represents a unit on the field.
